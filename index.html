@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>我的雲端書櫃</title>
     <!-- 引入 Tailwind CSS (樣式) -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -15,41 +15,68 @@
             theme: {
                 extend: {
                     colors: {
-                        amber: { 50: '#fffbeb', 100: '#fef3c7', 500: '#f59e0b', 600: '#d97706' },
-                        emerald: { 50: '#ecfdf5', 100: '#d1fae5', 500: '#10b981', 600: '#059669' },
-                        rose: { 50: '#fff1f2', 100: '#ffe4e6', 500: '#f43f5e', 600: '#e11d48' },
-                        slate: { 50: '#f8fafc', 100: '#f1f5f9', 300: '#cbd5e1', 400: '#94a3b8', 500: '#64748b', 800: '#1e293b' }
+                        paper: '#f9f7f2',
+                        ink: '#44403c',
+                        sub: '#78716c',
+                        wood: {
+                            100: '#f5efe6',
+                            200: '#e6ded3',
+                            500: '#a68a64',
+                            600: '#8c7352',
+                        },
+                        sage: {
+                            100: '#e8ece9',
+                            500: '#84a98c',
+                            600: '#6b8c73',
+                            text: '#52796f'
+                        },
+                        dried: {
+                            100: '#f4eeee',
+                            500: '#d68c92',
+                            600: '#b86b72',
+                            text: '#9d585e'
+                        },
+                        stone: {
+                            100: '#f5f5f4',
+                            500: '#78716c',
+                            600: '#57534e',
+                            text: '#57534e'
+                        }
                     }
                 }
             }
         }
     </script>
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+        /* 防止 iOS safari 點擊輸入框放大 */
+        input, textarea, select {
+            font-size: 16px !important; 
+        }
+    </style>
 </head>
-<body class="bg-slate-50 text-slate-800">
+<body class="bg-paper text-ink selection:bg-wood-200 selection:text-ink pb-10">
     <div id="root"></div>
 
-    <!-- 這是主要程式邏輯 -->
     <script type="text/babel" data-type="module">
-        // 1. 引入 React 和必要的套件
         import React, { useState, useEffect, useMemo } from 'https://esm.sh/react@18.2.0';
         import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
         import { 
             BookOpen, Search, Plus, Trash2, CheckCircle, BookX, 
-            Calendar, User, LogIn, RefreshCw, TrendingUp, Link as LinkIcon, FileText 
+            Calendar, User, LogIn, RefreshCw, TrendingUp, Link as LinkIcon, FileText, PenTool, Trophy, Hourglass 
         } from 'https://esm.sh/lucide-react@0.344.0';
         
-        // 2. 引入 Firebase
+        // --- Firebase Config (請填入你的設定) ---
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
-        import { 
-            getAuth, signInAnonymously, onAuthStateChanged 
-        } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
-        import { 
-            getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, serverTimestamp 
-        } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+        import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
+        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 
-        // ==========================================
-        // ▼▼▼ 請在下方貼上你的 Firebase Config ▼▼▼
-        // ==========================================
         const firebaseConfig = {
             apiKey: "AIzaSyDX1-Lwc5_u_fwV9P25xh32dVF8uVNT0QU",
             authDomain: "my-reading-tracker-58f69.firebaseapp.com",
@@ -59,26 +86,17 @@
             appId: "1:370802674969:web:efb1c045e0028925154988",
             measurementId: "G-52EWLNG7ST"
         };
-        // ==========================================
-        // ▲▲▲ 設定結束 ▲▲▲
-        // ==========================================
 
-        // 初始化 Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        
-        // 為了相容原本的程式碼結構，我們手動設定 appId
         const appId = "my-reading-app"; 
-
         const ESTIMATE_WORDS_PER_PAGE = 350;
 
-        // 主程式組件
         function ReadingTracker() {
             const [user, setUser] = useState(null);
             const [books, setBooks] = useState([]);
             const [loading, setLoading] = useState(true);
-            
             const [customId, setCustomId] = useState('');
             const [isLoginMode, setIsLoginMode] = useState(true);
             const [isAuthChecking, setIsAuthChecking] = useState(true);
@@ -94,10 +112,8 @@
             const [modalData, setModalData] = useState({});
             const [expandedBooks, setExpandedBooks] = useState({});
 
-            // 初始化與登入檢查
             useEffect(() => {
                 signInAnonymously(auth).catch((error) => console.error("Auth Error", error));
-                
                 const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
                     if (currentUser) {
                         setUser(currentUser);
@@ -114,15 +130,12 @@
                 return () => unsubscribe();
             }, []);
 
-            // 讀取資料
             useEffect(() => {
                 if (!user || !customId) {
                     setLoading(false);
                     return;
                 }
-
                 setLoading(true);
-                // 使用同樣的路徑規則
                 const collectionRef = collection(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`);
                 
                 const unsubscribe = onSnapshot(collectionRef, (snapshot) => {
@@ -130,18 +143,24 @@
                         id: doc.id,
                         ...doc.data()
                     }));
-                    // 排序
-                    fetchedBooks.sort((a, b) => new Date(b.addDate) - new Date(a.addDate));
+                    
+                    fetchedBooks.sort((a, b) => {
+                        const isReadingA = a.status === 'reading';
+                        const isReadingB = b.status === 'reading';
+                        if (isReadingA && !isReadingB) return -1;
+                        if (!isReadingA && isReadingB) return 1;
+                        return new Date(b.addDate) - new Date(a.addDate);
+                    });
+                    
                     setBooks(fetchedBooks);
                     setLoading(false);
                 }, (error) => {
-                    console.error("Error fetching books:", error);
+                    console.error("Error", error);
                     setLoading(false);
                 });
                 return () => unsubscribe();
             }, [user, customId]);
 
-            // 功能函數
             const handleLogin = (e) => {
                 e.preventDefault();
                 if (customId.trim().length < 3) return alert("ID 太短囉");
@@ -188,8 +207,7 @@
                 e.preventDefault();
                 if (!newBook.title || !customId) return;
                 try {
-                    const collectionRef = collection(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`);
-                    await addDoc(collectionRef, {
+                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`), {
                         ...newBook,
                         status: 'reading',
                         createdAt: serverTimestamp()
@@ -199,7 +217,6 @@
                         addDate: new Date().toISOString().split('T')[0], reviewUrl: '', synopsis: ''
                     });
                 } catch (error) {
-                    console.error(error);
                     alert("新增失敗");
                 }
             };
@@ -216,7 +233,7 @@
                 } else if (modalType === 'drop') {
                     updates.status = 'dropped';
                     updates.dropChapter = modalData.chapter;
-                    updates.dropDate = new Date().toISOString().split('T')[0];
+                    updates.dropDate = modalData.date;
                     updates.finishDate = null;
                 }
                 await updateDoc(bookRef, updates);
@@ -229,52 +246,57 @@
                 }
             };
 
-            const toggleSynopsis = (id) => {
-                setExpandedBooks(prev => ({...prev, [id]: !prev[id]}));
-            };
+            const toggleSynopsis = (id) => setExpandedBooks(prev => ({...prev, [id]: !prev[id]}));
 
             const openModal = (book, type) => {
                 setActiveBookId(book.id);
                 setModalType(type);
-                setModalData(type === 'finish' ? { date: new Date().toISOString().split('T')[0] } : { chapter: '' });
+                setModalData({ date: new Date().toISOString().split('T')[0], chapter: type === 'drop' ? '' : undefined });
             };
 
-            const closeModal = () => {
-                setActiveBookId(null);
-                setModalType(null);
-                setModalData({});
-            };
+            const closeModal = () => { setActiveBookId(null); setModalType(null); setModalData({}); };
 
             const stats = useMemo(() => {
-                const years = [2026, 2027, 2028];
-                const res = {};
-                years.forEach(y => res[y] = { finished: 0, dropped: 0 });
+                const yearStats = {};
+                let totalFinished = 0, totalDropped = 0, totalReading = 0;
+                const activeYears = new Set();
                 books.forEach(b => {
                     let y = null;
-                    if (b.status === 'finished' && b.finishDate) y = new Date(b.finishDate).getFullYear();
-                    else if (b.status === 'dropped' && b.dropDate) y = new Date(b.dropDate).getFullYear();
-                    
-                    if (y && res[y]) {
-                        if (b.status === 'finished') res[y].finished++;
-                        if (b.status === 'dropped') res[y].dropped++;
+                    if (b.status === 'reading') {
+                        totalReading++;
+                    } else if (b.status === 'finished' && b.finishDate) {
+                        y = new Date(b.finishDate).getFullYear();
+                        totalFinished++;
+                    } else if (b.status === 'dropped' && b.dropDate) {
+                        y = new Date(b.dropDate).getFullYear();
+                        totalDropped++;
+                    }
+                    if (y) {
+                        activeYears.add(y);
+                        if (!yearStats[y]) yearStats[y] = { finished: 0, dropped: 0 };
+                        if (b.status === 'finished') yearStats[y].finished++;
+                        if (b.status === 'dropped') yearStats[y].dropped++;
                     }
                 });
-                return res;
+                return { 
+                    years: Array.from(activeYears).sort((a, b) => b - a), 
+                    data: yearStats, 
+                    total: { finished: totalFinished, dropped: totalDropped, reading: totalReading } 
+                };
             }, [books]);
 
-            // 畫面渲染
-            if (isAuthChecking) return <div className="min-h-screen flex items-center justify-center"><RefreshCw className="animate-spin text-amber-500" /></div>;
+            if (isAuthChecking) return <div className="min-h-screen flex items-center justify-center bg-paper"><RefreshCw className="animate-spin text-wood-500" /></div>;
 
             if (isLoginMode) {
                 return (
-                    <div className="min-h-screen flex items-center justify-center p-4">
-                        <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md">
-                            <div className="flex justify-center mb-6 text-amber-500"><BookOpen size={64} /></div>
-                            <h1 className="text-2xl font-bold text-center mb-2">我的雲端書櫃</h1>
-                            <p className="text-slate-500 text-center mb-6 text-sm">請輸入專屬 ID 以同步資料。</p>
-                            <form onSubmit={handleLogin} className="space-y-4">
-                                <input value={customId} onChange={e=>setCustomId(e.target.value)} placeholder="例如: alex2026" className="w-full p-3 border rounded-lg outline-none focus:ring-2 focus:ring-amber-500"/>
-                                <button type="submit" className="w-full bg-amber-500 text-white py-3 rounded-lg font-bold flex justify-center gap-2"><LogIn size={20}/> 開始</button>
+                    <div className="min-h-screen flex items-center justify-center p-4 bg-paper">
+                        <div className="bg-white/80 p-8 rounded-3xl shadow-lg shadow-wood-100 border border-wood-200 w-full max-w-md backdrop-blur-sm">
+                            <div className="flex justify-center mb-6 text-wood-500"><BookOpen size={56} strokeWidth={1.5} /></div>
+                            <h1 className="text-3xl font-bold text-center mb-3 text-ink tracking-widest">雲端書櫃</h1>
+                            <p className="text-sub text-center mb-8 text-sm tracking-wider">輸入專屬 ID，開啟你的閱讀手帳。</p>
+                            <form onSubmit={handleLogin} className="space-y-5">
+                                <input value={customId} onChange={e=>setCustomId(e.target.value)} placeholder="例如: alex2026" className="w-full p-3 bg-transparent border-b-2 border-wood-200 focus:border-wood-500 outline-none text-center text-lg placeholder-wood-200" />
+                                <button type="submit" className="w-full bg-wood-500 text-white py-3 rounded-xl font-bold flex justify-center gap-2 hover:bg-wood-600 transition shadow-md shadow-wood-200 tracking-widest"><LogIn size={20} strokeWidth={1.5}/> 開啟</button>
                             </form>
                         </div>
                     </div>
@@ -282,88 +304,247 @@
             }
 
             return (
-                <div className="min-h-screen pb-20">
-                    <header className="bg-white shadow-sm sticky top-0 z-10">
-                        <div className="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
-                            <div className="flex items-center gap-2 text-amber-600 font-bold text-xl"><BookOpen className="fill-amber-100" /><span>閱讀追蹤</span></div>
-                            <div className="flex items-center gap-3">
-                                <div className="text-xs text-slate-400 bg-slate-100 px-2 py-1 rounded hidden sm:block">ID: {customId}</div>
-                                <button onClick={handleLogout} className="text-slate-500"><LogIn className="rotate-180" size={20}/></button>
+                <div className="min-h-screen bg-paper">
+                    {/* Header */}
+                    <header className="bg-paper/90 backdrop-blur sticky top-0 z-20 border-b border-wood-200 shadow-sm">
+                        <div className="max-w-3xl mx-auto px-4 py-4 md:px-6 md:py-5 flex justify-between items-center">
+                            <div className="flex items-center gap-3 text-ink font-bold text-xl md:text-2xl tracking-widest">
+                                <BookOpen className="text-wood-500" strokeWidth={1.5} />
+                                <span>閱讀手帳</span>
+                            </div>
+                            <div className="flex items-center gap-3 md:gap-4">
+                                <div className="text-xs text-sub bg-wood-100 px-3 py-1 rounded-full tracking-wide truncate max-w-[100px] md:max-w-none">ID: {customId}</div>
+                                <button onClick={handleLogout} className="text-wood-500 hover:text-ink transition"><LogIn className="rotate-180" size={20} strokeWidth={1.5}/></button>
                             </div>
                         </div>
                     </header>
 
-                    <main className="max-w-4xl mx-auto px-4 py-6 space-y-8">
-                        <section className="grid grid-cols-3 gap-2 sm:gap-4">
-                            {[2026, 2027, 2028].map(y => (
-                                <div key={y} className="bg-white p-3 rounded-xl shadow-sm border border-slate-100 flex flex-col items-center">
-                                    <span className="text-xs font-bold text-slate-400 mb-1">{y}</span>
-                                    <div className="flex gap-4">
-                                        <div className="text-center"><div className="text-emerald-500 font-bold text-lg">{stats[y].finished}</div><div className="text-[10px] text-slate-400">完食</div></div>
-                                        <div className="w-[1px] bg-slate-100"></div>
-                                        <div className="text-center"><div className="text-rose-500 font-bold text-lg">{stats[y].dropped}</div><div className="text-[10px] text-slate-400">棄書</div></div>
+                    <main className="max-w-3xl mx-auto px-4 py-6 md:px-6 md:py-8 space-y-8">
+                        
+                        {/* Stats Section */}
+                        <section className="space-y-4">
+                            {/* 總閱讀本數 - 雙欄區塊 */}
+                            <div className="grid grid-cols-2 gap-3 md:gap-4">
+                                {/* 目前閱讀中 -> 改成未讀 */}
+                                <div className="bg-stone-100 p-4 md:p-5 rounded-2xl border border-stone-200 shadow-sm flex flex-col justify-between relative overflow-hidden">
+                                    <div className="absolute right-0 top-0 p-3 opacity-10">
+                                        <Hourglass size={40} className="text-stone-500"/>
+                                    </div>
+                                    <div className="text-xs md:text-sm text-stone-500 font-medium tracking-wide mb-1">未讀</div>
+                                    <div className="text-3xl md:text-4xl font-bold text-stone-700 flex items-baseline gap-1 md:gap-2">
+                                        {stats.total.reading} 
+                                        <span className="text-xs md:text-sm font-normal text-stone-400">本</span>
                                     </div>
                                 </div>
-                            ))}
+
+                                {/* 生涯累積完食 */}
+                                <div className="bg-wood-500/10 p-4 md:p-5 rounded-2xl border border-wood-500/20 shadow-sm flex flex-col justify-between relative overflow-hidden">
+                                    <div className="absolute right-0 top-0 p-3 opacity-10">
+                                        <Trophy size={40} className="text-wood-600"/>
+                                    </div>
+                                    <div className="text-xs md:text-sm text-wood-600 font-medium tracking-wide mb-1">生涯累積完食</div>
+                                    <div className="text-3xl md:text-4xl font-bold text-ink flex items-baseline gap-1 md:gap-2">
+                                        {stats.total.finished} 
+                                        <span className="text-xs md:text-sm font-normal text-sub">本</span>
+                                    </div>
+                                    {stats.total.dropped > 0 && (
+                                        <div className="text-[10px] md:text-xs text-dried-600 text-right mt-1">
+                                            累積棄書 {stats.total.dropped}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* 年度統計 */}
+                            {stats.years.length > 0 && (
+                                <div className="grid gap-3 grid-cols-2 md:grid-cols-3">
+                                    {stats.years.map(y => (
+                                        <div key={y} className="bg-white p-3 md:p-4 rounded-xl border border-wood-100 flex flex-col items-center shadow-sm shadow-wood-100/50">
+                                            <span className="text-xs md:text-sm font-bold text-wood-500 mb-2">{y}</span>
+                                            <div className="flex gap-4 md:gap-6 w-full justify-center items-center">
+                                                <div className="text-center group">
+                                                    <div className="text-sage-500 font-medium text-lg md:text-xl">{stats.data[y].finished}</div>
+                                                    <div className="text-[10px] text-sub tracking-wider">完食</div>
+                                                </div>
+                                                <div className="h-6 md:h-8 w-[1px] bg-wood-100"></div>
+                                                <div className="text-center group">
+                                                    <div className="text-dried-500 font-medium text-lg md:text-xl">{stats.data[y].dropped}</div>
+                                                    <div className="text-[10px] text-sub tracking-wider">棄書</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </section>
 
-                        <section className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
-                            <h2 className="text-lg font-bold mb-4 flex items-center gap-2"><Plus className="text-amber-500" size={20} /> 新增書籍</h2>
-                            <form onSubmit={addBook} className="grid grid-cols-1 md:grid-cols-12 gap-4">
-                                <div className="md:col-span-5"><input placeholder="書名" value={newBook.title} onChange={e=>setNewBook({...newBook, title:e.target.value})} className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-amber-500 outline-none" required /></div>
-                                <div className="md:col-span-4"><input placeholder="作者" value={newBook.author} onChange={e=>setNewBook({...newBook, author:e.target.value})} className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-amber-500 outline-none" /></div>
-                                <div className="md:col-span-3"><button type="button" onClick={searchBookInfo} disabled={isSearching || !newBook.title} className="w-full h-full bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition flex items-center justify-center gap-1 text-sm font-medium disabled:opacity-50 py-2">{isSearching ? <RefreshCw className="animate-spin" size={16}/> : <Search size={16} />} 搜尋</button></div>
-                                <div className="md:col-span-4"><div className="relative"><input type="number" placeholder="字數/頁數" value={newBook.wordCount} onChange={e=>setNewBook({...newBook, wordCount:e.target.value, isWordCountManual:true})} className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-amber-500 outline-none" />{!newBook.isWordCountManual && newBook.wordCount && <span className="absolute right-2 top-2.5 text-[10px] text-slate-400 bg-slate-100 px-1 rounded">估算</span>}</div></div>
-                                <div className="md:col-span-4"><input type="date" value={newBook.addDate} onChange={e=>setNewBook({...newBook, addDate:e.target.value})} className="w-full p-2 border rounded-lg text-sm" /></div>
-                                <div className="md:col-span-4"><input type="url" placeholder="推薦連結" value={newBook.reviewUrl} onChange={e=>setNewBook({...newBook, reviewUrl:e.target.value})} className="w-full p-2 border rounded-lg text-sm focus:ring-2 focus:ring-amber-500 outline-none" /></div>
-                                <div className="md:col-span-12"><textarea placeholder="故事大綱" value={newBook.synopsis} onChange={e=>setNewBook({...newBook, synopsis:e.target.value})} className="w-full p-2 border rounded-lg text-sm focus:ring-2 focus:ring-amber-500 outline-none h-20" /></div>
-                                <div className="md:col-span-12"><button type="submit" className="w-full bg-amber-500 text-white p-2 rounded-lg font-bold hover:bg-amber-600 transition">加入書櫃</button></div>
+                        {/* Add Book Form */}
+                        <section className="bg-white rounded-2xl md:rounded-3xl border border-wood-100 p-5 md:p-8 shadow-sm shadow-wood-100/50">
+                            <h2 className="text-lg md:text-xl font-bold mb-4 md:mb-6 flex items-center gap-2 text-ink tracking-wide border-l-4 border-wood-500 pl-3">
+                                <PenTool className="text-wood-500 w-5 h-5" strokeWidth={1.5} /> 紀錄新書
+                            </h2>
+                            <form onSubmit={addBook} className="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-5">
+                                <div className="md:col-span-5">
+                                    <input placeholder="書名" value={newBook.title} onChange={e=>setNewBook({...newBook, title:e.target.value})} className="w-full p-2 bg-transparent border-b border-wood-200 focus:border-wood-500 outline-none placeholder-wood-300 transition-colors rounded-none" required />
+                                </div>
+                                <div className="md:col-span-4">
+                                    <input placeholder="作者" value={newBook.author} onChange={e=>setNewBook({...newBook, author:e.target.value})} className="w-full p-2 bg-transparent border-b border-wood-200 focus:border-wood-500 outline-none placeholder-wood-300 transition-colors rounded-none" />
+                                </div>
+                                <div className="md:col-span-3">
+                                    <button type="button" onClick={searchBookInfo} disabled={isSearching || !newBook.title} className="w-full h-full text-wood-600 bg-wood-100/50 hover:bg-wood-100 rounded-lg transition flex items-center justify-center gap-1 text-sm font-medium disabled:opacity-50 py-3 md:py-2 tracking-wide">
+                                        {isSearching ? <RefreshCw className="animate-spin w-4 h-4" /> : <Search className="w-4 h-4" strokeWidth={1.5} />} 搜尋
+                                    </button>
+                                </div>
+                                
+                                <div className="md:col-span-4 grid grid-cols-2 gap-2 md:block">
+                                    <div className="relative col-span-2 md:col-span-1">
+                                        <input type="number" placeholder="字數/頁數" value={newBook.wordCount} onChange={e=>setNewBook({...newBook, wordCount:e.target.value, isWordCountManual:true})} className="w-full p-2 bg-transparent border-b border-wood-200 focus:border-wood-500 outline-none placeholder-wood-300 transition-colors rounded-none" />
+                                        {!newBook.isWordCountManual && newBook.wordCount && <span className="absolute right-0 top-2 text-[10px] text-wood-400 bg-wood-50 px-1 rounded">估算</span>}
+                                    </div>
+                                </div>
+                                <div className="md:col-span-4">
+                                    <input type="date" value={newBook.addDate} onChange={e=>setNewBook({...newBook, addDate:e.target.value})} className="w-full p-2 bg-transparent border-b border-wood-200 text-sub focus:border-wood-500 outline-none rounded-none" />
+                                </div>
+                                <div className="md:col-span-4">
+                                    <input type="url" placeholder="推薦網址" value={newBook.reviewUrl} onChange={e=>setNewBook({...newBook, reviewUrl:e.target.value})} className="w-full p-2 bg-transparent border-b border-wood-200 focus:border-wood-500 outline-none placeholder-wood-300 transition-colors rounded-none" />
+                                </div>
+                                
+                                <div className="md:col-span-12">
+                                    <textarea placeholder="故事大綱..." value={newBook.synopsis} onChange={e=>setNewBook({...newBook, synopsis:e.target.value})} className="w-full p-3 bg-wood-50/50 rounded-xl border border-transparent focus:border-wood-200 outline-none h-24 placeholder-wood-300 resize-none text-base" />
+                                </div>
+                                
+                                <div className="md:col-span-12 flex justify-end">
+                                    <button type="submit" className="w-full md:w-auto bg-wood-500 text-white px-8 py-3 md:py-2.5 rounded-xl font-medium hover:bg-wood-600 transition shadow-md shadow-wood-200 tracking-widest flex items-center justify-center gap-2">
+                                        <Plus size={18} /> 加入
+                                    </button>
+                                </div>
                             </form>
                         </section>
 
-                        <section className="space-y-4">
-                            <div className="flex items-center gap-2 mb-2"><h2 className="text-lg font-bold">書單</h2>{loading && <RefreshCw className="animate-spin text-slate-400" size={16} />}</div>
-                            {!loading && books.length === 0 && <div className="text-center py-10 text-slate-400 bg-slate-50 border border-dashed border-slate-300 rounded-xl">還沒有書籍</div>}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Book List */}
+                        <section className="space-y-4 md:space-y-6">
+                            <div className="flex items-center gap-3 mb-2 md:mb-4 px-2">
+                                <h2 className="text-lg md:text-xl font-bold tracking-wide text-ink">書單列表</h2>
+                                {loading && <RefreshCw className="animate-spin text-wood-400 w-4 h-4" />}
+                                <div className="h-[1px] flex-1 bg-wood-200/60"></div>
+                            </div>
+                            
+                            {!loading && books.length === 0 && (
+                                <div className="text-center py-10 md:py-16 text-wood-400 bg-white/50 rounded-2xl md:rounded-3xl border border-dashed border-wood-200">
+                                    <BookOpen className="mx-auto mb-2 opacity-50 w-8 h-8 md:w-10 md:h-10" strokeWidth={1} />
+                                    <p className="tracking-widest font-light text-sm md:text-base">書櫃還是空的，選一本書開始吧。</p>
+                                </div>
+                            )}
+
+                            <div className="grid grid-cols-1 gap-4 md:gap-6">
                                 {books.map(book => (
-                                    <div key={book.id} className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex flex-col justify-between">
-                                        <div>
-                                            <div className="flex justify-between items-start mb-2">
-                                                <h3 className="font-bold text-lg line-clamp-1">{book.title}</h3>
-                                                <div className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${book.status==='finished'?'bg-emerald-100 text-emerald-600':book.status==='dropped'?'bg-rose-100 text-rose-600':'bg-amber-100 text-amber-600'}`}>{book.status==='finished'?'完食':book.status==='dropped'?'棄書':'閱讀中'}</div>
+                                    <div key={book.id} className="group bg-white p-4 md:p-6 rounded-2xl border border-wood-100 hover:border-wood-300 transition-all duration-300 animate-fade-in shadow-sm shadow-wood-100/30 flex flex-col md:flex-row gap-4 md:gap-6 relative overflow-hidden">
+                                        <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${book.status==='finished'?'bg-sage-500': book.status==='dropped'?'bg-dried-500': 'bg-stone-400'}`}></div>
+
+                                        <div className="flex-1 pl-3 md:pl-0">
+                                            <div className="flex justify-between items-start mb-2 md:mb-3">
+                                                <h3 className="font-bold text-lg md:text-xl text-ink tracking-wide leading-relaxed line-clamp-2 md:line-clamp-1">{book.title}</h3>
+                                                <span className={`px-2 py-1 md:px-3 md:py-1 rounded-full text-xs md:text-xs tracking-wider whitespace-nowrap ml-2
+                                                    ${book.status==='finished'?'bg-sage-100 text-sage-text':
+                                                      book.status==='dropped'?'bg-dried-100 text-dried-text':
+                                                      'bg-wood-100 text-wood-600'}`}>
+                                                    {book.status==='finished'?'已完食':book.status==='dropped'?'棄書':'閱讀中'}
+                                                </span>
                                             </div>
-                                            <div className="text-sm text-slate-500 mb-4 space-y-1.5">
-                                                <p className="flex items-center gap-1"><User size={14}/> {book.author||'未知'}</p>
-                                                <p className="flex items-center gap-1"><TrendingUp size={14}/> {book.wordCount ? `${Number(book.wordCount).toLocaleString()} 字` : '未知'}</p>
-                                                <p className="flex items-center gap-1"><Calendar size={14}/> 加入: {book.addDate}</p>
-                                                {book.status === 'finished' && <p className="text-emerald-600 font-medium mt-1 flex items-center gap-1"><CheckCircle size={14}/> 完食: {book.finishDate}</p>}
-                                                {book.status === 'dropped' && <div className="text-rose-600 font-medium mt-1"><p className="flex items-center gap-1"><BookX size={14}/> 棄書章節: {book.dropChapter}</p></div>}
-                                                {book.reviewUrl && <a href={book.reviewUrl} target="_blank" className="flex items-center gap-1 text-indigo-500 hover:underline truncate"><LinkIcon size={14}/> 連結</a>}
-                                                {book.synopsis && <div className="mt-2 pt-2 border-t border-slate-50"><button onClick={()=>toggleSynopsis(book.id)} className="flex items-center gap-1 text-xs text-slate-400"><FileText size={12}/> {expandedBooks[book.id]?'收起':'大綱'}</button>{expandedBooks[book.id] && <p className="text-xs text-slate-600 mt-1 bg-slate-50 p-2 rounded">{book.synopsis}</p>}</div>}
+                                            
+                                            <div className="text-sm text-sub space-y-2">
+                                                <div className="flex flex-wrap gap-2 md:gap-4 text-xs opacity-80">
+                                                    <span className="flex items-center gap-1"><User size={12}/> {book.author||'佚名'}</span>
+                                                    <span className="flex items-center gap-1"><TrendingUp size={12}/> {book.wordCount ? `${Number(book.wordCount).toLocaleString()}字` : '未知'}</span>
+                                                    <span className="flex items-center gap-1"><Calendar size={12}/> {book.addDate}</span>
+                                                </div>
+
+                                                {book.status === 'finished' && (
+                                                    <p className="text-sage-text mt-2 md:mt-3 flex items-center gap-2 bg-sage-50/50 p-2 rounded-lg inline-block text-xs md:text-sm">
+                                                        <CheckCircle size={14}/> 
+                                                        <span className="font-medium">完食於 {book.finishDate}</span>
+                                                    </p>
+                                                )}
+                                                {book.status === 'dropped' && (
+                                                    <div className="text-dried-text mt-2 md:mt-3 bg-dried-50/50 p-2 rounded-lg inline-block text-xs md:text-sm">
+                                                        <p className="flex items-center gap-2"><BookX size={14}/> <span>止步於 {book.dropChapter}</span></p>
+                                                        {book.dropDate && <p className="text-xs opacity-75 mt-1 ml-6">棄書日: {book.dropDate}</p>}
+                                                    </div>
+                                                )}
+
+                                                {book.reviewUrl && (
+                                                    <div className="mt-2">
+                                                        <a href={book.reviewUrl} target="_blank" className="inline-flex items-center gap-1 text-wood-600 hover:text-wood-800 hover:underline decoration-1 underline-offset-4 transition text-xs">
+                                                            <LinkIcon size={12}/> 閱讀推薦文章
+                                                        </a>
+                                                    </div>
+                                                )}
+
+                                                {book.synopsis && (
+                                                    <div className="mt-2 md:mt-3 pt-2 md:pt-3 border-t border-wood-100 border-dashed">
+                                                        <button onClick={()=>toggleSynopsis(book.id)} className="flex items-center gap-1.5 text-xs text-wood-400 hover:text-wood-600 transition tracking-wide mb-1 py-1">
+                                                            <FileText size={12}/> 
+                                                            {expandedBooks[book.id] ? '收起大綱' : '查看故事大綱'}
+                                                        </button>
+                                                        {expandedBooks[book.id] && (
+                                                            <p className="text-xs text-sub leading-6 md:leading-7 bg-wood-50/50 p-3 rounded-lg">
+                                                                {book.synopsis}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
-                                        <div className="pt-4 border-t border-slate-50 flex justify-between items-center mt-2">
+
+                                        <div className="flex md:flex-col justify-end items-center md:items-end border-t md:border-t-0 md:border-l border-wood-100 pt-3 md:pt-0 md:pl-4 gap-2">
                                             {book.status === 'reading' ? (
-                                                <div className="flex gap-2 w-full">
-                                                    <button onClick={()=>openModal(book, 'finish')} className="flex-1 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 py-1.5 rounded-lg text-sm font-medium">完食</button>
-                                                    <button onClick={()=>openModal(book, 'drop')} className="flex-1 bg-rose-50 text-rose-600 hover:bg-rose-100 py-1.5 rounded-lg text-sm font-medium">棄書</button>
+                                                <div className="flex md:flex-col gap-2 w-full md:w-auto">
+                                                    <button onClick={()=>openModal(book, 'finish')} className="flex-1 md:flex-none px-4 py-2 bg-sage-100/50 hover:bg-sage-100 text-sage-text rounded-lg text-xs tracking-wider transition text-center">完食</button>
+                                                    <button onClick={()=>openModal(book, 'drop')} className="flex-1 md:flex-none px-4 py-2 bg-dried-100/50 hover:bg-dried-100 text-dried-text rounded-lg text-xs tracking-wider transition text-center">棄書</button>
                                                 </div>
                                             ) : (
-                                                <button onClick={()=>{if(confirm('重置為閱讀中？')) updateDoc(doc(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`, book.id), {status:'reading', finishDate:null, dropChapter:null, dropDate:null})}} className="text-xs text-slate-400 underline">重置</button>
+                                                <button onClick={()=>{if(confirm('要重新開始閱讀這本書嗎？')) updateDoc(doc(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`, book.id), {status:'reading', finishDate:null, dropChapter:null, dropDate:null})}} className="text-xs text-wood-400 hover:text-wood-600 underline decoration-1 underline-offset-2 transition tracking-wider p-2">重置狀態</button>
                                             )}
-                                            <button onClick={()=>deleteBook(book.id)} className="ml-3 text-slate-300 hover:text-rose-400"><Trash2 size={18} /></button>
+                                            <button onClick={()=>deleteBook(book.id)} className="text-wood-300 hover:text-dried-500 p-2 transition ml-auto md:ml-0"><Trash2 size={16} strokeWidth={1.5} /></button>
                                         </div>
                                     </div>
                                 ))}
                             </div>
                         </section>
-                        {/* Modal 省略樣式細節，保持功能 */}
+
+                        {/* Modal */}
                         {activeBookId && (
-                            <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-                                <div className="bg-white rounded-2xl w-full max-w-sm p-6 shadow-2xl">
-                                    <h3 className="text-lg font-bold mb-4">{modalType==='finish'?'完食日期':'棄書資訊'}</h3>
-                                    {modalType==='finish' ? <input type="date" value={modalData.date} onChange={e=>setModalData({...modalData, date:e.target.value})} className="w-full p-2 border rounded-lg" /> : <input placeholder="棄書章節" value={modalData.chapter} onChange={e=>setModalData({...modalData, chapter:e.target.value})} className="w-full p-2 border rounded-lg" />}
-                                    <div className="flex gap-3 mt-6"><button onClick={closeModal} className="flex-1 py-2 text-slate-500">取消</button><button onClick={updateStatus} className="flex-1 py-2 text-white bg-amber-500 rounded-lg">確認</button></div>
+                            <div className="fixed inset-0 bg-ink/20 backdrop-blur-sm flex items-end md:items-center justify-center z-50 animate-fade-in p-0 md:p-4">
+                                <div className="bg-white rounded-t-3xl md:rounded-3xl w-full max-w-sm p-6 md:p-8 shadow-2xl shadow-wood-500/20 border border-wood-100 pb-10 md:pb-8">
+                                    <div className="w-10 h-1 bg-wood-200 rounded-full mx-auto mb-6 md:hidden"></div>
+                                    <h3 className="text-xl font-bold mb-6 text-center text-ink tracking-widest border-b border-wood-100 pb-4">
+                                        {modalType==='finish'?'紀錄完食日':'紀錄棄書點'}
+                                    </h3>
+                                    
+                                    {modalType==='finish' ? (
+                                        <div className="bg-wood-50/50 p-4 rounded-xl">
+                                            <input type="date" value={modalData.date} onChange={e=>setModalData({...modalData, date:e.target.value})} className="w-full bg-transparent border-b border-wood-300 focus:border-wood-500 outline-none p-2 text-center text-ink" />
+                                        </div>
+                                    ) : (
+                                        <div className="bg-wood-50/50 p-4 rounded-xl space-y-4">
+                                            <div className="space-y-1">
+                                                <label className="text-xs text-sub block">棄書日期</label>
+                                                <input type="date" value={modalData.date} onChange={e=>setModalData({...modalData, date:e.target.value})} className="w-full bg-transparent border-b border-wood-300 focus:border-wood-500 outline-none p-2 text-center text-ink" />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <label className="text-xs text-sub block">進度紀錄</label>
+                                                <input placeholder="在哪個章節停下了？" value={modalData.chapter} onChange={e=>setModalData({...modalData, chapter:e.target.value})} className="w-full bg-transparent border-b border-wood-300 focus:border-wood-500 outline-none p-2 text-center text-ink placeholder-wood-300 rounded-none" />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="flex gap-4 mt-8">
+                                        <button onClick={closeModal} className="flex-1 py-3 md:py-2.5 text-sub hover:bg-wood-50 rounded-xl transition tracking-wide text-sm bg-wood-50/50 md:bg-transparent">再想想</button>
+                                        <button onClick={updateStatus} className={`flex-1 py-3 md:py-2.5 text-white rounded-xl shadow-md transition tracking-wide text-sm font-medium
+                                            ${modalType==='finish'?'bg-sage-500 hover:bg-sage-600 shadow-sage-200':'bg-dried-500 hover:bg-dried-600 shadow-dried-200'}`}>
+                                            確認紀錄
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         )}
