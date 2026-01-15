@@ -336,4 +336,44 @@
                                                 <p className="flex items-center gap-1"><User size={14}/> {book.author||'未知'}</p>
                                                 <p className="flex items-center gap-1"><TrendingUp size={14}/> {book.wordCount ? `${Number(book.wordCount).toLocaleString()} 字` : '未知'}</p>
                                                 <p className="flex items-center gap-1"><Calendar size={14}/> 加入: {book.addDate}</p>
-                                                {book.status === 'finished' && <p className="text-emerald-600 font-medium mt-1 flex items-center gap-1"><CheckCircle
+                                                {book.status === 'finished' && <p className="text-emerald-600 font-medium mt-1 flex items-center gap-1"><CheckCircle size={14}/> 完食: {book.finishDate}</p>}
+                                                {book.status === 'dropped' && <div className="text-rose-600 font-medium mt-1"><p className="flex items-center gap-1"><BookX size={14}/> 棄書章節: {book.dropChapter}</p></div>}
+                                                {book.reviewUrl && <a href={book.reviewUrl} target="_blank" className="flex items-center gap-1 text-indigo-500 hover:underline truncate"><LinkIcon size={14}/> 連結</a>}
+                                                {book.synopsis && <div className="mt-2 pt-2 border-t border-slate-50"><button onClick={()=>toggleSynopsis(book.id)} className="flex items-center gap-1 text-xs text-slate-400"><FileText size={12}/> {expandedBooks[book.id]?'收起':'大綱'}</button>{expandedBooks[book.id] && <p className="text-xs text-slate-600 mt-1 bg-slate-50 p-2 rounded">{book.synopsis}</p>}</div>}
+                                            </div>
+                                        </div>
+                                        <div className="pt-4 border-t border-slate-50 flex justify-between items-center mt-2">
+                                            {book.status === 'reading' ? (
+                                                <div className="flex gap-2 w-full">
+                                                    <button onClick={()=>openModal(book, 'finish')} className="flex-1 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 py-1.5 rounded-lg text-sm font-medium">完食</button>
+                                                    <button onClick={()=>openModal(book, 'drop')} className="flex-1 bg-rose-50 text-rose-600 hover:bg-rose-100 py-1.5 rounded-lg text-sm font-medium">棄書</button>
+                                                </div>
+                                            ) : (
+                                                <button onClick={()=>{if(confirm('重置為閱讀中？')) updateDoc(doc(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`, book.id), {status:'reading', finishDate:null, dropChapter:null, dropDate:null})}} className="text-xs text-slate-400 underline">重置</button>
+                                            )}
+                                            <button onClick={()=>deleteBook(book.id)} className="ml-3 text-slate-300 hover:text-rose-400"><Trash2 size={18} /></button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </section>
+                        {/* Modal 省略樣式細節，保持功能 */}
+                        {activeBookId && (
+                            <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+                                <div className="bg-white rounded-2xl w-full max-w-sm p-6 shadow-2xl">
+                                    <h3 className="text-lg font-bold mb-4">{modalType==='finish'?'完食日期':'棄書資訊'}</h3>
+                                    {modalType==='finish' ? <input type="date" value={modalData.date} onChange={e=>setModalData({...modalData, date:e.target.value})} className="w-full p-2 border rounded-lg" /> : <input placeholder="棄書章節" value={modalData.chapter} onChange={e=>setModalData({...modalData, chapter:e.target.value})} className="w-full p-2 border rounded-lg" />}
+                                    <div className="flex gap-3 mt-6"><button onClick={closeModal} className="flex-1 py-2 text-slate-500">取消</button><button onClick={updateStatus} className="flex-1 py-2 text-white bg-amber-500 rounded-lg">確認</button></div>
+                                </div>
+                            </div>
+                        )}
+                    </main>
+                </div>
+            );
+        }
+
+        const root = createRoot(document.getElementById('root'));
+        root.render(<ReadingTracker />);
+    </script>
+</body>
+</html>
