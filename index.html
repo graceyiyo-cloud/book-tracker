@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的雲端書櫃</title>
+    <!-- 引入 Tailwind CSS (樣式) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Babel (讓瀏覽器看懂 React) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- 設定 Tailwind 顏色 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        amber: { 50: '#fffbeb', 100: '#fef3c7', 500: '#f59e0b', 600: '#d97706' },
+                        emerald: { 50: '#ecfdf5', 100: '#d1fae5', 500: '#10b981', 600: '#059669' },
+                        rose: { 50: '#fff1f2', 100: '#ffe4e6', 500: '#f43f5e', 600: '#e11d48' },
+                        slate: { 50: '#f8fafc', 100: '#f1f5f9', 300: '#cbd5e1', 400: '#94a3b8', 500: '#64748b', 800: '#1e293b' }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-50 text-slate-800">
+    <div id="root"></div>
+
+    <!-- 這是主要程式邏輯 -->
+    <script type="text/babel" data-type="module">
+        // 1. 引入 React 和必要的套件
+        import React, { useState, useEffect, useMemo } from 'https://esm.sh/react@18.2.0';
+        import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
+        import { 
+            BookOpen, Search, Plus, Trash2, CheckCircle, BookX, 
+            Calendar, User, LogIn, RefreshCw, TrendingUp, Link as LinkIcon, FileText 
+        } from 'https://esm.sh/lucide-react@0.344.0';
+        
+        // 2. 引入 Firebase
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+        import { 
+            getAuth, signInAnonymously, onAuthStateChanged 
+        } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
+        import { 
+            getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, serverTimestamp 
+        } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+
+        // ==========================================
+        // ▼▼▼ 請在下方貼上你的 Firebase Config ▼▼▼
+        // ==========================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyDX1-Lwc5_u_fwV9P25xh32dVF8uVNT0QU",
+            authDomain: "my-reading-tracker-58f69.firebaseapp.com",
+            projectId: "my-reading-tracker-58f69",
+            storageBucket: "my-reading-tracker-58f69.firebasestorage.app",
+            messagingSenderId: "370802674969",
+            appId: "1:370802674969:web:efb1c045e0028925154988",
+            measurementId: "G-52EWLNG7ST"
+        };
+        // ==========================================
+        // ▲▲▲ 設定結束 ▲▲▲
+        // ==========================================
+
+        // 初始化 Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        
+        // 為了相容原本的程式碼結構，我們手動設定 appId
+        const appId = "my-reading-app"; 
+
+        const ESTIMATE_WORDS_PER_PAGE = 350;
+
+        // 主程式組件
+        function ReadingTracker() {
+            const [user, setUser] = useState(null);
+            const [books, setBooks] = useState([]);
+            const [loading, setLoading] = useState(true);
+            
+            const [customId, setCustomId] = useState('');
+            const [isLoginMode, setIsLoginMode] = useState(true);
+            const [isAuthChecking, setIsAuthChecking] = useState(true);
+
+            const [newBook, setNewBook] = useState({
+                title: '', author: '', wordCount: '', isWordCountManual: false,
+                addDate: new Date().toISOString().split('T')[0],
+                reviewUrl: '', synopsis: ''
+            });
+            const [isSearching, setIsSearching] = useState(false);
+            const [activeBookId, setActiveBookId] = useState(null);
+            const [modalType, setModalType] = useState(null);
+            const [modalData, setModalData] = useState({});
+            const [expandedBooks, setExpandedBooks] = useState({});
+
+            // 初始化與登入檢查
+            useEffect(() => {
+                signInAnonymously(auth).catch((error) => console.error("Auth Error", error));
+                
+                const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+                    if (currentUser) {
+                        setUser(currentUser);
+                        const savedId = localStorage.getItem('reading_tracker_custom_id');
+                        if (savedId) {
+                            setCustomId(savedId);
+                            setIsLoginMode(false);
+                        } else {
+                            setIsLoginMode(true);
+                        }
+                    }
+                    setIsAuthChecking(false);
+                });
+                return () => unsubscribe();
+            }, []);
+
+            // 讀取資料
+            useEffect(() => {
+                if (!user || !customId) {
+                    setLoading(false);
+                    return;
+                }
+
+                setLoading(true);
+                // 使用同樣的路徑規則
+                const collectionRef = collection(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`);
+                
+                const unsubscribe = onSnapshot(collectionRef, (snapshot) => {
+                    const fetchedBooks = snapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }));
+                    // 排序
+                    fetchedBooks.sort((a, b) => new Date(b.addDate) - new Date(a.addDate));
+                    setBooks(fetchedBooks);
+                    setLoading(false);
+                }, (error) => {
+                    console.error("Error fetching books:", error);
+                    setLoading(false);
+                });
+                return () => unsubscribe();
+            }, [user, customId]);
+
+            // 功能函數
+            const handleLogin = (e) => {
+                e.preventDefault();
+                if (customId.trim().length < 3) return alert("ID 太短囉");
+                localStorage.setItem('reading_tracker_custom_id', customId);
+                setIsLoginMode(false);
+            };
+
+            const handleLogout = () => {
+                if(confirm("確定要登出嗎？")) {
+                    localStorage.removeItem('reading_tracker_custom_id');
+                    setCustomId('');
+                    setBooks([]);
+                    setIsLoginMode(true);
+                }
+            };
+
+            const searchBookInfo = async () => {
+                if (!newBook.title) return;
+                setIsSearching(true);
+                try {
+                    const q = `intitle:${newBook.title}${newBook.author ? `+inauthor:${newBook.author}` : ''}`;
+                    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=1`);
+                    const data = await res.json();
+                    if (data.items && data.items.length > 0) {
+                        const info = data.items[0].volumeInfo;
+                        setNewBook(prev => ({
+                            ...prev,
+                            author: prev.author || info.authors?.[0] || '',
+                            wordCount: (info.pageCount || 0) * ESTIMATE_WORDS_PER_PAGE,
+                            isWordCountManual: false,
+                            synopsis: info.description || ''
+                        }));
+                    } else {
+                        alert("找不到書籍資料");
+                    }
+                } catch (error) {
+                    alert("搜尋失敗");
+                } finally {
+                    setIsSearching(false);
+                }
+            };
+
+            const addBook = async (e) => {
+                e.preventDefault();
+                if (!newBook.title || !customId) return;
+                try {
+                    const collectionRef = collection(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`);
+                    await addDoc(collectionRef, {
+                        ...newBook,
+                        status: 'reading',
+                        createdAt: serverTimestamp()
+                    });
+                    setNewBook({
+                        title: '', author: '', wordCount: '', isWordCountManual: false,
+                        addDate: new Date().toISOString().split('T')[0], reviewUrl: '', synopsis: ''
+                    });
+                } catch (error) {
+                    console.error(error);
+                    alert("新增失敗");
+                }
+            };
+
+            const updateStatus = async () => {
+                if (!activeBookId || !modalType) return;
+                const bookRef = doc(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`, activeBookId);
+                const updates = {};
+                if (modalType === 'finish') {
+                    updates.status = 'finished';
+                    updates.finishDate = modalData.date;
+                    updates.dropChapter = null;
+                    updates.dropDate = null;
+                } else if (modalType === 'drop') {
+                    updates.status = 'dropped';
+                    updates.dropChapter = modalData.chapter;
+                    updates.dropDate = new Date().toISOString().split('T')[0];
+                    updates.finishDate = null;
+                }
+                await updateDoc(bookRef, updates);
+                closeModal();
+            };
+
+            const deleteBook = async (id) => {
+                if (confirm("確定刪除？")) {
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`, id));
+                }
+            };
+
+            const toggleSynopsis = (id) => {
+                setExpandedBooks(prev => ({...prev, [id]: !prev[id]}));
+            };
+
+            const openModal = (book, type) => {
+                setActiveBookId(book.id);
+                setModalType(type);
+                setModalData(type === 'finish' ? { date: new Date().toISOString().split('T')[0] } : { chapter: '' });
+            };
+
+            const closeModal = () => {
+                setActiveBookId(null);
+                setModalType(null);
+                setModalData({});
+            };
+
+            const stats = useMemo(() => {
+                const years = [2026, 2027, 2028];
+                const res = {};
+                years.forEach(y => res[y] = { finished: 0, dropped: 0 });
+                books.forEach(b => {
+                    let y = null;
+                    if (b.status === 'finished' && b.finishDate) y = new Date(b.finishDate).getFullYear();
+                    else if (b.status === 'dropped' && b.dropDate) y = new Date(b.dropDate).getFullYear();
+                    
+                    if (y && res[y]) {
+                        if (b.status === 'finished') res[y].finished++;
+                        if (b.status === 'dropped') res[y].dropped++;
+                    }
+                });
+                return res;
+            }, [books]);
+
+            // 畫面渲染
+            if (isAuthChecking) return <div className="min-h-screen flex items-center justify-center"><RefreshCw className="animate-spin text-amber-500" /></div>;
+
+            if (isLoginMode) {
+                return (
+                    <div className="min-h-screen flex items-center justify-center p-4">
+                        <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md">
+                            <div className="flex justify-center mb-6 text-amber-500"><BookOpen size={64} /></div>
+                            <h1 className="text-2xl font-bold text-center mb-2">我的雲端書櫃</h1>
+                            <p className="text-slate-500 text-center mb-6 text-sm">請輸入專屬 ID 以同步資料。</p>
+                            <form onSubmit={handleLogin} className="space-y-4">
+                                <input value={customId} onChange={e=>setCustomId(e.target.value)} placeholder="例如: alex2026" className="w-full p-3 border rounded-lg outline-none focus:ring-2 focus:ring-amber-500"/>
+                                <button type="submit" className="w-full bg-amber-500 text-white py-3 rounded-lg font-bold flex justify-center gap-2"><LogIn size={20}/> 開始</button>
+                            </form>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen pb-20">
+                    <header className="bg-white shadow-sm sticky top-0 z-10">
+                        <div className="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
+                            <div className="flex items-center gap-2 text-amber-600 font-bold text-xl"><BookOpen className="fill-amber-100" /><span>閱讀追蹤</span></div>
+                            <div className="flex items-center gap-3">
+                                <div className="text-xs text-slate-400 bg-slate-100 px-2 py-1 rounded hidden sm:block">ID: {customId}</div>
+                                <button onClick={handleLogout} className="text-slate-500"><LogIn className="rotate-180" size={20}/></button>
+                            </div>
+                        </div>
+                    </header>
+
+                    <main className="max-w-4xl mx-auto px-4 py-6 space-y-8">
+                        <section className="grid grid-cols-3 gap-2 sm:gap-4">
+                            {[2026, 2027, 2028].map(y => (
+                                <div key={y} className="bg-white p-3 rounded-xl shadow-sm border border-slate-100 flex flex-col items-center">
+                                    <span className="text-xs font-bold text-slate-400 mb-1">{y}</span>
+                                    <div className="flex gap-4">
+                                        <div className="text-center"><div className="text-emerald-500 font-bold text-lg">{stats[y].finished}</div><div className="text-[10px] text-slate-400">完食</div></div>
+                                        <div className="w-[1px] bg-slate-100"></div>
+                                        <div className="text-center"><div className="text-rose-500 font-bold text-lg">{stats[y].dropped}</div><div className="text-[10px] text-slate-400">棄書</div></div>
+                                    </div>
+                                </div>
+                            ))}
+                        </section>
+
+                        <section className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+                            <h2 className="text-lg font-bold mb-4 flex items-center gap-2"><Plus className="text-amber-500" size={20} /> 新增書籍</h2>
+                            <form onSubmit={addBook} className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                                <div className="md:col-span-5"><input placeholder="書名" value={newBook.title} onChange={e=>setNewBook({...newBook, title:e.target.value})} className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-amber-500 outline-none" required /></div>
+                                <div className="md:col-span-4"><input placeholder="作者" value={newBook.author} onChange={e=>setNewBook({...newBook, author:e.target.value})} className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-amber-500 outline-none" /></div>
+                                <div className="md:col-span-3"><button type="button" onClick={searchBookInfo} disabled={isSearching || !newBook.title} className="w-full h-full bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition flex items-center justify-center gap-1 text-sm font-medium disabled:opacity-50 py-2">{isSearching ? <RefreshCw className="animate-spin" size={16}/> : <Search size={16} />} 搜尋</button></div>
+                                <div className="md:col-span-4"><div className="relative"><input type="number" placeholder="字數/頁數" value={newBook.wordCount} onChange={e=>setNewBook({...newBook, wordCount:e.target.value, isWordCountManual:true})} className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-amber-500 outline-none" />{!newBook.isWordCountManual && newBook.wordCount && <span className="absolute right-2 top-2.5 text-[10px] text-slate-400 bg-slate-100 px-1 rounded">估算</span>}</div></div>
+                                <div className="md:col-span-4"><input type="date" value={newBook.addDate} onChange={e=>setNewBook({...newBook, addDate:e.target.value})} className="w-full p-2 border rounded-lg text-sm" /></div>
+                                <div className="md:col-span-4"><input type="url" placeholder="推薦連結" value={newBook.reviewUrl} onChange={e=>setNewBook({...newBook, reviewUrl:e.target.value})} className="w-full p-2 border rounded-lg text-sm focus:ring-2 focus:ring-amber-500 outline-none" /></div>
+                                <div className="md:col-span-12"><textarea placeholder="故事大綱" value={newBook.synopsis} onChange={e=>setNewBook({...newBook, synopsis:e.target.value})} className="w-full p-2 border rounded-lg text-sm focus:ring-2 focus:ring-amber-500 outline-none h-20" /></div>
+                                <div className="md:col-span-12"><button type="submit" className="w-full bg-amber-500 text-white p-2 rounded-lg font-bold hover:bg-amber-600 transition">加入書櫃</button></div>
+                            </form>
+                        </section>
+
+                        <section className="space-y-4">
+                            <div className="flex items-center gap-2 mb-2"><h2 className="text-lg font-bold">書單</h2>{loading && <RefreshCw className="animate-spin text-slate-400" size={16} />}</div>
+                            {!loading && books.length === 0 && <div className="text-center py-10 text-slate-400 bg-slate-50 border border-dashed border-slate-300 rounded-xl">還沒有書籍</div>}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {books.map(book => (
+                                    <div key={book.id} className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex flex-col justify-between">
+                                        <div>
+                                            <div className="flex justify-between items-start mb-2">
+                                                <h3 className="font-bold text-lg line-clamp-1">{book.title}</h3>
+                                                <div className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${book.status==='finished'?'bg-emerald-100 text-emerald-600':book.status==='dropped'?'bg-rose-100 text-rose-600':'bg-amber-100 text-amber-600'}`}>{book.status==='finished'?'完食':book.status==='dropped'?'棄書':'閱讀中'}</div>
+                                            </div>
+                                            <div className="text-sm text-slate-500 mb-4 space-y-1.5">
+                                                <p className="flex items-center gap-1"><User size={14}/> {book.author||'未知'}</p>
+                                                <p className="flex items-center gap-1"><TrendingUp size={14}/> {book.wordCount ? `${Number(book.wordCount).toLocaleString()} 字` : '未知'}</p>
+                                                <p className="flex items-center gap-1"><Calendar size={14}/> 加入: {book.addDate}</p>
+                                                {book.status === 'finished' && <p className="text-emerald-600 font-medium mt-1 flex items-center gap-1"><CheckCircle
