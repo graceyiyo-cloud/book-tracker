@@ -21,6 +21,8 @@
                         wood: {
                             100: '#f5efe6',
                             200: '#e6ded3',
+                            300: '#d5cbbd',
+                            400: '#c5b6a3',
                             500: '#a68a64',
                             600: '#8c7352',
                         },
@@ -38,6 +40,7 @@
                         },
                         stone: {
                             100: '#f5f5f4',
+                            400: '#a8a29e',
                             500: '#78716c',
                             600: '#57534e',
                             text: '#57534e'
@@ -53,13 +56,21 @@
     </script>
     <style>
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
+            from { opacity: 0; transform: translateY(-10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        .animate-fade-in {
-            animation: fadeIn 0.5s ease-out forwards;
+        .animate-fade-in-down {
+            animation: fadeIn 0.3s ease-out forwards;
         }
         
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .animate-modal-in {
+            animation: modalIn 0.2s ease-out forwards;
+        }
+
         /* 1. 電腦版預設字體縮小為 90% */
         html {
             font-size: 90%;
@@ -99,13 +110,13 @@
         import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
         import { 
             BookOpen, Search, Plus, Trash2, CheckCircle, BookX, 
-            Calendar, User, LogIn, RefreshCw, TrendingUp, Link as LinkIcon, FileText, PenTool, Trophy, Hourglass, Star, X, Tag, RotateCcw, AlertTriangle 
+            Calendar, User, LogIn, RefreshCw, TrendingUp, Link as LinkIcon, FileText, PenTool, Trophy, Hourglass, Star, X, Tag, RotateCcw, AlertTriangle, Filter, LogOut
         } from 'https://esm.sh/lucide-react@0.344.0';
         
         // --- Firebase Config ---
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
         import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
-        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 
         const firebaseConfig = {
             apiKey: "AIzaSyDX1-Lwc5_u_fwV9P25xh32dVF8uVNT0QU",
@@ -123,23 +134,26 @@
         const appId = "my-reading-app"; 
         const ESTIMATE_WORDS_PER_PAGE = 350;
 
-        const CATEGORIES = [
+        const DEFAULT_CATEGORIES = [
             "玄幻", "奇幻", "武俠", "仙俠", "都市", "言情", "古代", "架空", 
             "科幻", "懸疑", "推理", "驚悚", "恐怖", "冒險", "耽美 (BL)", "百合 (GL)", 
             "穿越", "重生", "系統", "快穿", "無限流", "末世", "種田", "宅鬥", "宮鬥", 
             "娛樂圈", "電競", "校園", "職場", "先婚後愛", "破鏡重圓", "青梅竹馬", 
-            "異能", "空間", "甜寵", "虐戀", "爽文", "升級流", "治癒", "輕鬆", "沙雕", 
-            "正劇", "腹黑", "傲嬌", "忠犬", "強強", "1v1", "大女主", "滿級大佬", 
-            "美強慘", "幕後黑手"
+            "異能", "空間", "甜寵", "虐戀", "爽文", "升級流", "治癒", "輕鬆", "沙雕"
         ];
 
         function ReadingTracker() {
             const [user, setUser] = useState(null);
             const [books, setBooks] = useState([]);
+            const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
             const [loading, setLoading] = useState(true);
             const [customId, setCustomId] = useState('');
             const [isLoginMode, setIsLoginMode] = useState(true);
             const [isAuthChecking, setIsAuthChecking] = useState(true);
+            const [toast, setToast] = useState(null); // { message, type }
+
+            // Search & Filter State
+            const [searchTerm, setSearchTerm] = useState('');
 
             const [newBook, setNewBook] = useState({
                 title: '', author: '', wordCount: '', isWordCountManual: false,
@@ -148,10 +162,13 @@
             });
             const [isSearching, setIsSearching] = useState(false);
             const [activeBookId, setActiveBookId] = useState(null);
-            const [modalType, setModalType] = useState(null); // 'finish', 'drop', 'reset', 'delete'
+            const [modalType, setModalType] = useState(null); // 'finish', 'drop', 'reset', 'delete', 'logout', 'deleteCategory'
             const [modalData, setModalData] = useState({});
             const [expandedBooks, setExpandedBooks] = useState({});
+            
+            // Category Management
             const [isCategoryOpen, setIsCategoryOpen] = useState(false);
+            const [newCategoryInput, setNewCategoryInput] = useState('');
 
             useEffect(() => {
                 signInAnonymously(auth).catch((error) => console.error("Auth Error", error));
@@ -180,10 +197,23 @@
                 const collectionRef = collection(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`);
                 
                 const unsubscribe = onSnapshot(collectionRef, (snapshot) => {
-                    const fetchedBooks = snapshot.docs.map(doc => ({
-                        id: doc.id,
-                        ...doc.data()
-                    }));
+                    const fetchedBooks = [];
+                    let fetchedCategories = [...DEFAULT_CATEGORIES];
+
+                    snapshot.docs.forEach(doc => {
+                        // 特殊處理：設定檔
+                        if (doc.id === 'settings') {
+                            if (doc.data().categories && Array.isArray(doc.data().categories)) {
+                                fetchedCategories = doc.data().categories;
+                            }
+                        } else {
+                            // 一般書籍
+                            fetchedBooks.push({
+                                id: doc.id,
+                                ...doc.data()
+                            });
+                        }
+                    });
                     
                     fetchedBooks.sort((a, b) => {
                         const isReadingA = a.status === 'reading';
@@ -194,28 +224,30 @@
                     });
                     
                     setBooks(fetchedBooks);
+                    setCategories(fetchedCategories);
                     setLoading(false);
                 }, (error) => {
                     console.error("Error", error);
                     setLoading(false);
+                    showToast("資料讀取失敗", "error");
                 });
                 return () => unsubscribe();
             }, [user, customId]);
 
+            const showToast = (message, type = 'info') => {
+                setToast({ message, type });
+                setTimeout(() => setToast(null), 3000);
+            };
+
             const handleLogin = (e) => {
                 e.preventDefault();
-                if (customId.trim().length < 3) return alert("ID 太短囉");
+                if (customId.trim().length < 3) return showToast("ID 太短囉", "error");
                 localStorage.setItem('reading_tracker_custom_id', customId);
                 setIsLoginMode(false);
             };
 
             const handleLogout = () => {
-                if(confirm("確定要登出嗎？")) {
-                    localStorage.removeItem('reading_tracker_custom_id');
-                    setCustomId('');
-                    setBooks([]);
-                    setIsLoginMode(true);
-                }
+                setModalType('logout');
             };
 
             const searchBookInfo = async () => {
@@ -234,11 +266,12 @@
                             isWordCountManual: false,
                             synopsis: info.description || ''
                         }));
+                        showToast("找到書籍資料！");
                     } else {
-                        alert("找不到書籍資料");
+                        showToast("找不到書籍資料", "error");
                     }
                 } catch (error) {
-                    alert("搜尋失敗");
+                    showToast("搜尋失敗", "error");
                 } finally {
                     setIsSearching(false);
                 }
@@ -258,12 +291,45 @@
                         addDate: new Date().toISOString().split('T')[0], reviewUrl: '', synopsis: '', category: []
                     });
                     setIsCategoryOpen(false);
+                    showToast("新增成功！");
                 } catch (error) {
-                    alert("新增失敗");
+                    showToast("新增失敗", "error");
                 }
             };
 
-            const toggleCategory = (cat) => {
+            // Category Management Functions
+            const updateCategoriesInDb = async (newCats) => {
+                try {
+                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`, 'settings'), {
+                        categories: newCats
+                    }, { merge: true });
+                } catch (err) {
+                    console.error("Failed to update categories", err);
+                    showToast("更新分類失敗", "error");
+                }
+            };
+
+            const addNewCategory = async () => {
+                if (!newCategoryInput.trim()) return;
+                const catName = newCategoryInput.trim();
+                if (categories.includes(catName)) {
+                    showToast("分類已存在", "error");
+                    return;
+                }
+                const updatedCats = [...categories, catName];
+                await updateCategoriesInDb(updatedCats);
+                setNewCategoryInput('');
+                toggleCategorySelection(catName);
+                showToast(`已新增分類「${catName}」`);
+            };
+
+            const confirmDeleteCategory = (catToDelete, e) => {
+                e.stopPropagation();
+                setModalData({ category: catToDelete });
+                setModalType('deleteCategory');
+            };
+
+            const toggleCategorySelection = (cat) => {
                 setNewBook(prev => {
                     const currentCats = Array.isArray(prev.category) ? prev.category : [];
                     if (currentCats.includes(cat)) {
@@ -275,12 +341,33 @@
             };
 
             const handleModalAction = async () => {
-                if (!activeBookId || !modalType) return;
-                const bookRef = doc(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`, activeBookId);
+                if (!modalType) return;
                 
                 try {
+                    if (modalType === 'logout') {
+                        localStorage.removeItem('reading_tracker_custom_id');
+                        setCustomId('');
+                        setBooks([]);
+                        setIsLoginMode(true);
+                        closeModal();
+                        return; // Early return for logout
+                    }
+                    
+                    if (modalType === 'deleteCategory') {
+                        const catToDelete = modalData.category;
+                        const updatedCats = categories.filter(c => c !== catToDelete);
+                        await updateCategoriesInDb(updatedCats);
+                        showToast(`已刪除分類「${catToDelete}」`);
+                        closeModal();
+                        return;
+                    }
+
+                    if (!activeBookId) return;
+                    const bookRef = doc(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`, activeBookId);
+
                     if (modalType === 'delete') {
                         await deleteDoc(bookRef);
+                        showToast("已刪除書籍");
                     } else {
                         const updates = {};
                         if (modalType === 'finish') {
@@ -303,11 +390,12 @@
                             updates.rating = null;
                         }
                         await updateDoc(bookRef, updates);
+                        showToast("狀態已更新");
                     }
                     closeModal();
                 } catch (error) {
                     console.error("Action failed:", error);
-                    alert("操作失敗，請稍後再試");
+                    showToast("操作失敗，請稍後再試", "error");
                 }
             };
 
@@ -331,6 +419,26 @@
             const activeBook = useMemo(() => {
                 return books.find(b => b.id === activeBookId);
             }, [books, activeBookId]);
+
+            // Filtered Books Logic
+            const filteredBooks = useMemo(() => {
+                if (!searchTerm.trim()) return books;
+                const term = searchTerm.toLowerCase();
+                return books.filter(b => {
+                    return (
+                        b.title?.toLowerCase().includes(term) ||
+                        b.author?.toLowerCase().includes(term) ||
+                        (b.category && b.category.some(c => c.toLowerCase().includes(term)))
+                    );
+                });
+            }, [books, searchTerm]);
+            
+            // Filtered Categories Logic (for Adding new categories)
+            const filteredCategories = useMemo(() => {
+                if (!newCategoryInput.trim()) return categories;
+                const term = newCategoryInput.toLowerCase();
+                return categories.filter(c => c.toLowerCase().includes(term));
+            }, [categories, newCategoryInput]);
 
             const stats = useMemo(() => {
                 const yearStats = {};
@@ -388,7 +496,14 @@
 
             if (isLoginMode) {
                 return (
-                    <div className="min-h-screen flex items-center justify-center p-4 bg-paper">
+                    <div className="min-h-screen flex items-center justify-center p-4 bg-paper relative">
+                        {toast && (
+                            <div className={`fixed top-4 left-1/2 -translate-x-1/2 px-4 py-3 rounded-xl shadow-xl z-50 animate-fade-in-down text-white text-sm font-bold tracking-wide flex items-center gap-2
+                                ${toast.type === 'error' ? 'bg-dried-500' : 'bg-wood-500'}`}>
+                                {toast.type === 'error' ? <AlertTriangle size={16}/> : <CheckCircle size={16}/>}
+                                {toast.message}
+                            </div>
+                        )}
                         <div className="bg-white/80 p-8 rounded-3xl shadow-lg shadow-wood-100 border border-wood-200 w-full max-w-md backdrop-blur-sm">
                             <div className="flex justify-center mb-6 text-wood-500"><BookOpen size={56} strokeWidth={1.5} /></div>
                             <h1 className="text-3xl font-bold text-center mb-3 text-ink tracking-widest">雲端書櫃</h1>
@@ -403,7 +518,16 @@
             }
 
             return (
-                <div className="min-h-screen bg-paper">
+                <div className="min-h-screen bg-paper relative">
+                    {/* Toast Notification */}
+                    {toast && (
+                        <div className={`fixed top-20 md:top-4 left-1/2 -translate-x-1/2 px-4 py-3 rounded-xl shadow-xl z-50 animate-fade-in-down text-white text-sm font-bold tracking-wide flex items-center gap-2
+                            ${toast.type === 'error' ? 'bg-dried-500' : 'bg-wood-500'}`}>
+                            {toast.type === 'error' ? <AlertTriangle size={16}/> : <CheckCircle size={16}/>}
+                            {toast.message}
+                        </div>
+                    )}
+
                     <header className="bg-paper/90 backdrop-blur sticky top-0 z-20 border-b border-wood-200 shadow-sm">
                         <div className="max-w-3xl mx-auto px-4 py-4 md:px-6 md:py-5 flex justify-between items-center">
                             <div className="flex items-center gap-3 text-ink font-bold text-xl md:text-2xl tracking-widest flex-shrink-0">
@@ -414,12 +538,13 @@
                                 <div className="text-xs text-sub bg-wood-100 px-3 py-1 rounded-full tracking-wide break-all text-right min-w-0">
                                     ID: {customId}
                                 </div>
-                                <button onClick={handleLogout} className="text-wood-500 hover:text-ink transition flex-shrink-0"><LogIn className="rotate-180" size={20} strokeWidth={1.5}/></button>
+                                <button onClick={handleLogout} className="text-wood-500 hover:text-ink transition flex-shrink-0" title="登出"><LogOut size={20} strokeWidth={1.5}/></button>
                             </div>
                         </div>
                     </header>
 
                     <main className="max-w-3xl mx-auto px-4 py-6 md:px-6 md:py-8 space-y-8">
+                        {/* 統計區塊 */}
                         <section className="space-y-4">
                             <div className="grid grid-cols-2 gap-3 md:gap-4">
                                 <div className="bg-stone-100 p-4 md:p-5 rounded-2xl border border-stone-200 shadow-sm flex flex-col justify-between relative overflow-hidden">
@@ -455,6 +580,7 @@
                             )}
                         </section>
 
+                        {/* 新增書籍區塊 */}
                         <section className="bg-white rounded-2xl md:rounded-3xl border border-wood-100 p-5 md:p-8 shadow-sm shadow-wood-100/50">
                             <h2 className="text-lg md:text-xl font-bold mb-4 md:mb-6 flex items-center gap-2 text-ink tracking-wide border-l-4 border-wood-500 pl-3">
                                 <PenTool className="text-wood-500 w-5 h-5" strokeWidth={1.5} /> 紀錄新書
@@ -469,16 +595,63 @@
                                         {(newBook.category && newBook.category.length > 0) ? (
                                             newBook.category.map(cat => (
                                                 <span key={cat} className="bg-wood-500 text-white text-xs px-2 py-0.5 rounded-full flex items-center gap-1">
-                                                    {cat}<X size={12} className="cursor-pointer" onClick={(e) => { e.stopPropagation(); toggleCategory(cat); }}/>
+                                                    {cat}<X size={12} className="cursor-pointer" onClick={(e) => { e.stopPropagation(); toggleCategorySelection(cat); }}/>
                                                 </span>
                                             ))
-                                        ) : <span className="text-wood-300 flex items-center gap-2"><Tag size={16}/> 選擇分類 (可多選)...</span>}
+                                        ) : <span className="text-wood-300 flex items-center gap-2"><Tag size={16}/> 選擇或新增分類...</span>}
                                     </div>
                                     {isCategoryOpen && (
-                                        <div className="w-full mt-2 p-3 bg-wood-50/50 rounded-lg border border-wood-200 max-h-60 overflow-y-auto no-scrollbar shadow-inner animate-fade-in grid grid-cols-4 md:grid-cols-6 gap-2">
-                                            {CATEGORIES.map(cat => (
-                                                <button type="button" key={cat} onClick={() => toggleCategory(cat)} className={`text-xs px-2 py-1.5 rounded-md transition-colors text-center truncate ${newBook.category && newBook.category.includes(cat) ? 'bg-wood-500 text-white shadow-sm' : 'bg-white text-wood-600 hover:bg-wood-100 border border-wood-100'}`}>{cat}</button>
-                                            ))}
+                                        <div className="w-full mt-2 p-3 bg-wood-50/50 rounded-lg border border-wood-200 shadow-inner animate-fade-in">
+                                            {/* 新增分類輸入框 */}
+                                            <div className="flex gap-2 mb-3 pb-3 border-b border-wood-200/50">
+                                                <input 
+                                                    type="text" 
+                                                    placeholder="搜尋或新增分類..." 
+                                                    value={newCategoryInput}
+                                                    onChange={e => setNewCategoryInput(e.target.value)}
+                                                    onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addNewCategory())}
+                                                    className="flex-1 bg-white border border-wood-200 rounded px-2 py-1 text-sm outline-none focus:border-wood-400"
+                                                />
+                                                <button 
+                                                    type="button" 
+                                                    onClick={addNewCategory}
+                                                    disabled={!newCategoryInput.trim()}
+                                                    className="bg-wood-500 text-white px-3 py-1 rounded text-xs hover:bg-wood-600 disabled:opacity-50 transition flex-shrink-0"
+                                                >
+                                                    新增
+                                                </button>
+                                            </div>
+
+                                            {/* 分類列表 */}
+                                            <div className="max-h-52 overflow-y-auto no-scrollbar grid grid-cols-3 md:grid-cols-5 gap-2">
+                                                {filteredCategories.length > 0 ? filteredCategories.map(cat => (
+                                                    <div key={cat} className="relative group/cat">
+                                                        <button 
+                                                            type="button" 
+                                                            onClick={() => {
+                                                                toggleCategorySelection(cat);
+                                                                setNewCategoryInput(''); // 點選後清空搜尋
+                                                            }} 
+                                                            className={`w-full text-xs px-2 py-1.5 rounded-md transition-colors text-center truncate pr-5 
+                                                                ${newBook.category && newBook.category.includes(cat) ? 'bg-wood-500 text-white shadow-sm' : 'bg-white text-wood-600 hover:bg-wood-100 border border-wood-100'}`}
+                                                        >
+                                                            {cat}
+                                                        </button>
+                                                        <button 
+                                                            type="button" 
+                                                            onClick={(e) => confirmDeleteCategory(cat, e)}
+                                                            className="absolute right-1 top-1/2 -translate-y-1/2 text-wood-300 hover:text-dried-500 p-0.5"
+                                                            title="刪除分類"
+                                                        >
+                                                            <X size={10} strokeWidth={3} />
+                                                        </button>
+                                                    </div>
+                                                )) : (
+                                                    <div className="col-span-3 md:col-span-5 text-center text-xs text-wood-400 py-4">
+                                                        找不到「{newCategoryInput}」，點擊「新增」來建立分類
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     )}
                                 </div>
@@ -493,22 +666,37 @@
                             </form>
                         </section>
 
+                        {/* 書單列表區塊 */}
                         <section className="space-y-4 md:space-y-6">
-                            <div className="flex items-center gap-3 mb-2 md:mb-4 px-2">
-                                <h2 className="text-lg md:text-xl font-bold tracking-wide text-ink">書單列表</h2>
+                            <div className="flex flex-col md:flex-row md:items-center gap-3 mb-2 md:mb-4 px-2">
+                                <h2 className="text-lg md:text-xl font-bold tracking-wide text-ink whitespace-nowrap">書單列表</h2>
                                 {loading && <RefreshCw className="animate-spin text-wood-400 w-4 h-4" />}
-                                <div className="h-[1px] flex-1 bg-wood-200/60"></div>
+                                
+                                {/* 搜尋與過濾 */}
+                                <div className="flex-1 w-full md:w-auto flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-wood-100 shadow-sm focus-within:border-wood-300 focus-within:ring-1 focus-within:ring-wood-200 transition-all">
+                                    <Filter size={16} className="text-wood-400" />
+                                    <input 
+                                        type="text" 
+                                        placeholder="搜尋書名、作者或分類..." 
+                                        value={searchTerm}
+                                        onChange={e => setSearchTerm(e.target.value)}
+                                        className="bg-transparent border-none outline-none w-full text-sm text-ink placeholder-wood-300"
+                                    />
+                                    {searchTerm && <button onClick={() => setSearchTerm('')}><X size={14} className="text-wood-400 hover:text-wood-600"/></button>}
+                                </div>
                             </div>
                             
-                            {!loading && books.length === 0 && (
+                            {!loading && filteredBooks.length === 0 && (
                                 <div className="text-center py-10 md:py-16 text-wood-400 bg-white/50 rounded-2xl md:rounded-3xl border border-dashed border-wood-200">
                                     <BookOpen className="mx-auto mb-2 opacity-50 w-8 h-8 md:w-10 md:h-10" strokeWidth={1} />
-                                    <p className="tracking-widest font-light text-sm md:text-base">書櫃還是空的，選一本書開始吧。</p>
+                                    <p className="tracking-widest font-light text-sm md:text-base">
+                                        {books.length === 0 ? "書櫃還是空的，選一本書開始吧。" : "找不到符合搜尋條件的書籍。"}
+                                    </p>
                                 </div>
                             )}
 
                             <div className="grid grid-cols-1 gap-4 md:gap-6">
-                                {books.map(book => (
+                                {filteredBooks.map(book => (
                                     <div key={book.id} className="group bg-white p-4 md:p-6 rounded-2xl border border-wood-100 hover:border-wood-300 transition-all duration-300 animate-fade-in shadow-sm shadow-wood-100/30 flex flex-col md:flex-row gap-4 md:gap-6 relative overflow-hidden">
                                         <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${book.status==='finished'?'bg-sage-500': book.status==='dropped'?'bg-dried-500': 'bg-stone-400'}`}></div>
 
@@ -519,7 +707,7 @@
                                                         {book.category && (Array.isArray(book.category) ? book.category : [book.category]).map((cat, idx) => (
                                                             <span key={idx} className="text-[10px] md:text-xs text-wood-600 bg-wood-100 px-2 py-0.5 rounded-sm">{cat}</span>
                                                         ))}
-                                                        <span className={`px-2 py-0.5 md:px-3 rounded-full text-[10px] md:text-xs tracking-wider whitespace-nowrap ${book.status==='finished'?'bg-sage-100 text-sage-text': book.status==='dropped'?'bg-dried-100 text-dried-text': 'bg-wood-100 text-wood-600'}`}>{book.status==='finished'?'已完食':book.status==='dropped'?'棄書':'閱讀中'}</span>
+                                                        <span className={`px-2 py-0.5 md:px-3 rounded-full text-[10px] md:text-xs tracking-wider whitespace-nowrap ${book.status==='finished'?'bg-sage-100 text-sage-text': book.status==='dropped'?'bg-dried-100 text-dried-text': 'bg-stone-100 text-stone-600'}`}>{book.status==='finished'?'已完食':book.status==='dropped'?'棄書':'未讀'}</span>
                                                     </div>
                                                     <h3 className="font-bold text-lg md:text-xl text-ink tracking-wide leading-relaxed line-clamp-2 md:line-clamp-1">{book.title}</h3>
                                                 </div>
@@ -556,9 +744,9 @@
                         </section>
 
                         {/* 通用 Modal */}
-                        {activeBookId && (
+                        {(activeBookId || modalType === 'logout' || modalType === 'deleteCategory') && (
                             <div className="fixed inset-0 bg-ink/20 backdrop-blur-sm flex items-end md:items-center justify-center z-50 animate-fade-in p-0 md:p-4" onClick={closeModal}>
-                                <div className="bg-white rounded-t-3xl md:rounded-3xl w-full max-w-sm p-6 md:p-8 shadow-2xl shadow-wood-500/20 border border-wood-100 pb-10 md:pb-8" onClick={e => e.stopPropagation()}>
+                                <div className="bg-white rounded-t-3xl md:rounded-3xl w-full max-w-sm p-6 md:p-8 shadow-2xl shadow-wood-500/20 border border-wood-100 pb-10 md:pb-8 animate-modal-in" onClick={e => e.stopPropagation()}>
                                     <div className="w-10 h-1 bg-wood-200 rounded-full mx-auto mb-6 md:hidden"></div>
                                     
                                     <h3 className="text-xl font-bold mb-4 text-center text-ink tracking-widest border-b border-wood-100 pb-4">
@@ -566,6 +754,8 @@
                                         {modalType === 'drop' && '紀錄棄書點'}
                                         {modalType === 'reset' && '重置狀態'}
                                         {modalType === 'delete' && '刪除書籍'}
+                                        {modalType === 'logout' && '登出確認'}
+                                        {modalType === 'deleteCategory' && '刪除分類'}
                                     </h3>
 
                                     <div className="mb-6">
@@ -585,7 +775,7 @@
                                             <div className="text-center p-4 text-wood-600">
                                                 <RotateCcw size={48} className="mx-auto mb-3 text-wood-300" />
                                                 <p className="mb-2 font-bold text-ink">{activeBook?.title}</p>
-                                                <p className="text-sm">確定要將這本書重置為「閱讀中」嗎？</p>
+                                                <p className="text-sm">確定要將這本書重置為「未讀」嗎？</p>
                                             </div>
                                         )}
                                         {modalType === 'delete' && (
@@ -595,14 +785,26 @@
                                                 <p className="text-sm text-dried-600">確定要刪除這筆紀錄嗎？<br/>此動作無法復原。</p>
                                             </div>
                                         )}
+                                        {modalType === 'logout' && (
+                                            <div className="text-center p-4 text-wood-600">
+                                                <LogOut size={48} className="mx-auto mb-3 text-wood-300" />
+                                                <p className="text-sm font-medium">確定要登出嗎？<br/><span className="text-xs text-sub">下次需要重新輸入 ID 才能查看書櫃。</span></p>
+                                            </div>
+                                        )}
+                                        {modalType === 'deleteCategory' && (
+                                            <div className="text-center p-4 text-wood-600">
+                                                <Trash2 size={48} className="mx-auto mb-3 text-dried-400" />
+                                                <p className="mb-2 font-bold text-ink">{modalData.category}</p>
+                                                <p className="text-sm text-dried-600">確定要刪除此分類嗎？<br/><span className="text-xs text-sub">(已設定此分類的書籍不會受影響)</span></p>
+                                            </div>
+                                        )}
                                     </div>
 
                                     <div className="flex gap-4">
                                         <button onClick={closeModal} className="flex-1 py-3 md:py-2.5 text-sub hover:bg-wood-50 rounded-xl transition tracking-wide text-sm bg-wood-50/50 md:bg-transparent">取消</button>
                                         <button onClick={handleModalAction} className={`flex-1 py-3 md:py-2.5 text-white rounded-xl shadow-md transition tracking-wide text-sm font-medium
-                                            ${modalType==='finish'?'bg-sage-500 hover:bg-sage-600 shadow-sage-200':
-                                              modalType==='drop'?'bg-dried-500 hover:bg-dried-600 shadow-dried-200':
-                                              modalType==='reset'?'bg-wood-500 hover:bg-wood-600 shadow-wood-200':
+                                            ${['finish'].includes(modalType)?'bg-sage-500 hover:bg-sage-600 shadow-sage-200':
+                                              ['reset', 'logout'].includes(modalType)?'bg-wood-500 hover:bg-wood-600 shadow-wood-200':
                                               'bg-dried-600 hover:bg-dried-700 shadow-dried-200'}`}>
                                             確認
                                         </button>
