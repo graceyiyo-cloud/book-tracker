@@ -24,19 +24,25 @@
                             600: '#8c7352',
                         },
                         sage: {
+                            50: '#f4f7f5',
                             100: '#e8ece9',
+                            200: '#c5d3ca',
                             500: '#84a98c',
                             600: '#6b8c73',
                             text: '#52796f'
                         },
                         dried: {
+                            50: '#fbf5f5',
                             100: '#f4eeee',
+                            200: '#e8d5d7',
                             500: '#d68c92',
                             600: '#b86b72',
                             text: '#9d585e'
                         },
                         stone: {
+                            50: '#fafaf9',
                             100: '#f5f5f4',
+                            200: '#e7e5e4',
                             400: '#a8a29e',
                             500: '#78716c',
                             600: '#57534e',
@@ -792,18 +798,31 @@
                                             </div>
                                         </div>
 
-                                        <div className="flex md:flex-col justify-end items-center md:items-end border-t md:border-t-0 md:border-l border-wood-100 pt-3 md:pt-0 md:pl-4 gap-2">
+                                        <div className="flex flex-row md:flex-col gap-2 mt-3 pt-3 border-t border-wood-100 md:mt-0 md:pt-0 md:border-t-0 md:border-l md:pl-4 md:w-32 shrink-0">
                                             {book.status === 'reading' ? (
-                                                <div className="flex md:flex-col gap-2 w-full md:w-auto">
-                                                    <button type="button" onClick={(e)=>openModal(book, 'finish', e)} className="flex-1 md:flex-none px-4 py-2 bg-sage-100/50 hover:bg-sage-100 text-sage-text rounded-lg text-xs tracking-wider transition text-center">完食</button>
-                                                    <button type="button" onClick={(e)=>openModal(book, 'drop', e)} className="flex-1 md:flex-none px-4 py-2 bg-dried-100/50 hover:bg-dried-100 text-dried-text rounded-lg text-xs tracking-wider transition text-center">棄書</button>
-                                                </div>
+                                                <>
+                                                   <button onClick={(e)=>openModal(book, 'finish', e)} className="flex-1 md:w-full py-2 px-3 bg-sage-50 text-sage-600 hover:bg-sage-100 hover:text-sage-700 rounded-lg text-xs font-medium transition flex items-center justify-center gap-1.5 shadow-sm border border-sage-100">
+                                                       <CheckCircle size={14} /> 完食
+                                                   </button>
+                                                   <button onClick={(e)=>openModal(book, 'drop', e)} className="flex-1 md:w-full py-2 px-3 bg-dried-50 text-dried-600 hover:bg-dried-100 hover:text-dried-700 rounded-lg text-xs font-medium transition flex items-center justify-center gap-1.5 shadow-sm border border-dried-100">
+                                                       <BookX size={14} /> 棄書
+                                                   </button>
+                                                </>
                                             ) : (
-                                                <button type="button" onClick={(e)=>openModal(book, 'reset', e)} className="text-xs text-wood-400 hover:text-wood-600 underline decoration-1 underline-offset-2 transition tracking-wider p-2 flex items-center gap-1"><RotateCcw size={12}/> 重設</button>
+                                                <button onClick={(e)=>openModal(book, 'reset', e)} className="flex-1 md:w-full py-2 px-3 bg-stone-50 text-stone-600 hover:bg-stone-100 rounded-lg text-xs font-medium transition flex items-center justify-center gap-1.5 shadow-sm border border-stone-200">
+                                                    <RotateCcw size={14} /> 重置
+                                                </button>
                                             )}
-                                            <div className="flex gap-2 ml-auto md:ml-0">
-                                                <button type="button" onClick={(e)=>openModal(book, 'edit', e)} className="text-wood-300 hover:text-wood-600 p-2 transition" title="編輯"><Edit3 size={16} strokeWidth={1.5} /></button>
-                                                <button type="button" onClick={(e)=>openModal(book, 'delete', e)} className="text-wood-300 hover:text-dried-500 p-2 transition" title="刪除"><Trash2 size={16} strokeWidth={1.5} /></button>
+                                            
+                                            <div className="hidden md:block w-full h-px bg-wood-100 my-1"></div>
+
+                                            <div className="flex gap-2 flex-1 md:w-full">
+                                                <button onClick={(e)=>openModal(book, 'edit', e)} className="flex-1 py-2 bg-white text-wood-400 hover:bg-wood-50 hover:text-wood-600 rounded-lg transition flex items-center justify-center border border-wood-200 shadow-sm" title="編輯">
+                                                   <Edit3 size={16} strokeWidth={1.5} />
+                                                </button>
+                                                <button onClick={(e)=>openModal(book, 'delete', e)} className="flex-1 py-2 bg-white text-wood-300 hover:bg-dried-50 hover:text-dried-500 rounded-lg transition flex items-center justify-center border border-wood-200 shadow-sm" title="刪除">
+                                                   <Trash2 size={16} strokeWidth={1.5} />
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
@@ -820,7 +839,7 @@
                                     <h3 className="text-xl font-bold mb-4 text-center text-ink tracking-widest border-b border-wood-100 pb-4">
                                         {modalType === 'finish' && '紀錄完食日'}
                                         {modalType === 'drop' && '紀錄棄書點'}
-                                        {modalType === 'reset' && '重設狀態'}
+                                        {modalType === 'reset' && '重置狀態'}
                                         {modalType === 'delete' && '刪除書籍'}
                                         {modalType === 'logout' && '登出確認'}
                                         {modalType === 'deleteCategory' && '刪除分類'}
@@ -878,7 +897,7 @@
                                             <div className="text-center p-4 text-wood-600">
                                                 <RotateCcw size={48} className="mx-auto mb-3 text-wood-300" />
                                                 <p className="mb-2 font-bold text-ink">{activeBook?.title}</p>
-                                                <p className="text-sm">確定要將這本書重設為「未讀」嗎？</p>
+                                                <p className="text-sm">確定要將這本書重置為「未讀」嗎？</p>
                                             </div>
                                         )}
                                         {modalType === 'delete' && (
