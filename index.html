@@ -726,7 +726,7 @@
                                 </div>
                                 <div className="md:col-span-4"><input type="date" value={newBook.addDate} onChange={e=>setNewBook({...newBook, addDate:e.target.value})} className="w-full p-2 bg-transparent border-b border-wood-200 text-sub focus:border-wood-500 outline-none rounded-none" /></div>
                                 <div className="md:col-span-4"><input type="url" placeholder="推薦網址" value={newBook.reviewUrl} onChange={e=>setNewBook({...newBook, reviewUrl:e.target.value})} className="w-full p-2 bg-transparent border-b border-wood-200 focus:border-wood-500 outline-none placeholder-wood-300 transition-colors rounded-none" /></div>
-                                <div className="md:col-span-12"><textarea placeholder="故事大綱..." value={newBook.synopsis} onChange={e=>setNewBook({...newBook, synopsis:e.target.value})} className="w-full p-3 bg-wood-50/50 rounded-xl border border-transparent focus:border-wood-200 outline-none h-24 placeholder-wood-300 resize-none text-base" /></div>
+                                <div className="md:col-span-12"><textarea placeholder="故事大綱..." value={newBook.synopsis} onChange={e=>setNewBook({...newBook, synopsis:e.target.value})} className="w-full p-3 bg-wood-50/50 rounded-xl border border-wood-200 focus:border-wood-400 outline-none h-24 placeholder-wood-300 resize-none text-base" /></div>
                                 <div className="md:col-span-12 flex justify-end"><button type="submit" className="w-full md:w-auto bg-wood-500 text-white px-8 py-3 md:py-2.5 rounded-xl font-medium hover:bg-wood-600 transition shadow-md shadow-wood-200 tracking-widest flex items-center justify-center gap-2"><Plus size={18} /> 加入</button></div>
                             </form>
                         </section>
@@ -802,15 +802,15 @@
                                             {book.status === 'reading' ? (
                                                 <>
                                                    <button onClick={(e)=>openModal(book, 'finish', e)} className="flex-1 md:w-full py-2 px-3 bg-sage-50 text-sage-600 hover:bg-sage-100 hover:text-sage-700 rounded-lg text-xs font-medium transition flex items-center justify-center gap-1.5 shadow-sm border border-sage-100">
-                                                       <CheckCircle size={14} /> 完食
+                                                        <CheckCircle size={14} /> 完食
                                                    </button>
                                                    <button onClick={(e)=>openModal(book, 'drop', e)} className="flex-1 md:w-full py-2 px-3 bg-dried-50 text-dried-600 hover:bg-dried-100 hover:text-dried-700 rounded-lg text-xs font-medium transition flex items-center justify-center gap-1.5 shadow-sm border border-dried-100">
-                                                       <BookX size={14} /> 棄書
+                                                        <BookX size={14} /> 棄書
                                                    </button>
                                                 </>
                                             ) : (
                                                 <button onClick={(e)=>openModal(book, 'reset', e)} className="flex-1 md:w-full py-2 px-3 bg-stone-50 text-stone-600 hover:bg-stone-100 rounded-lg text-xs font-medium transition flex items-center justify-center gap-1.5 shadow-sm border border-stone-200">
-                                                    <RotateCcw size={14} /> 重置
+                                                    <RotateCcw size={14} /> 重設
                                                 </button>
                                             )}
                                             
@@ -839,7 +839,7 @@
                                     <h3 className="text-xl font-bold mb-4 text-center text-ink tracking-widest border-b border-wood-100 pb-4">
                                         {modalType === 'finish' && '紀錄完食日'}
                                         {modalType === 'drop' && '紀錄棄書點'}
-                                        {modalType === 'reset' && '重置狀態'}
+                                        {modalType === 'reset' && '重設狀態'}
                                         {modalType === 'delete' && '刪除書籍'}
                                         {modalType === 'logout' && '登出確認'}
                                         {modalType === 'deleteCategory' && '刪除分類'}
@@ -897,7 +897,7 @@
                                             <div className="text-center p-4 text-wood-600">
                                                 <RotateCcw size={48} className="mx-auto mb-3 text-wood-300" />
                                                 <p className="mb-2 font-bold text-ink">{activeBook?.title}</p>
-                                                <p className="text-sm">確定要將這本書重置為「未讀」嗎？</p>
+                                                <p className="text-sm">確定要將這本書重設為「未讀」嗎？</p>
                                             </div>
                                         )}
                                         {modalType === 'delete' && (
