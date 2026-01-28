@@ -155,6 +155,12 @@
                 return allCategories.filter(c => c.toLowerCase().includes(term));
             }, [allCategories, filterText]);
 
+            // 處理選擇分類並清空搜尋框
+            const handleSelect = (cat) => {
+                onToggle(cat);
+                setFilterText(''); // 清空文字
+            };
+
             return (
                 <div className="w-full">
                     <div className="flex flex-wrap gap-2 items-center min-h-[40px] p-2 border-b border-wood-200">
@@ -197,12 +203,12 @@
                                 
                                 {filtered.map(cat => {
                                     const isSelected = selectedCategories.includes(cat);
-                                    if (isSelected) return null; // 已選的不顯示在清單中，讓畫面更乾淨
+                                    if (isSelected) return null; // 已選的不顯示在清單中
                                     return (
                                         <div key={cat} className="group relative">
                                             <button 
                                                 type="button" 
-                                                onClick={() => onToggle(cat)}
+                                                onClick={() => handleSelect(cat)}
                                                 className="bg-wood-50 text-wood-600 border border-wood-100 text-xs px-3 py-1.5 rounded-full hover:bg-wood-100 hover:border-wood-300 transition"
                                             >
                                                 {cat}
