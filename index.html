@@ -243,8 +243,8 @@
             const [toast, setToast] = useState(null); 
 
             const [searchTerm, setSearchTerm] = useState('');
-            const [statusFilter, setStatusFilter] = useState('all'); // 'all', 'reading', 'finished', 'dropped'
-            const [ratingFilter, setRatingFilter] = useState(0); // 0 (all), 3, 4, 5
+            const [statusFilter, setStatusFilter] = useState('all'); 
+            const [ratingFilter, setRatingFilter] = useState(0); 
             const [isRatingMenuOpen, setIsRatingMenuOpen] = useState(false);
 
             const [newBook, setNewBook] = useState({
@@ -365,7 +365,6 @@
                 e.preventDefault();
                 if (!newBook.title || !customId) return;
 
-                // 檢查是否重複
                 const isDuplicate = books.some(b => 
                     b.title.trim() === newBook.title.trim() && 
                     (b.author || '').trim() === (newBook.author || '').trim()
@@ -481,20 +480,24 @@
                         closeModal();
                         return;
                     }
-                    if (!activeBookId) return;
-                    const bookRef = doc(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`, activeBookId);
+
+                    const targetId = activeBookId || modalData.id;
+                    if (!targetId && modalType !== 'logout' && modalType !== 'deleteCategory') return;
+                    
+                    const bookRef = doc(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`, targetId);
+                    
                     if (modalType === 'delete') {
                         await deleteDoc(bookRef);
                         showToast("已刪除書籍");
                     } else if (modalType === 'edit') {
                         await updateDoc(bookRef, {
-                            title: modalData.title,
-                            author: modalData.author,
-                            category: modalData.category,
-                            wordCount: modalData.wordCount,
-                            addDate: modalData.addDate,
-                            reviewUrl: modalData.reviewUrl,
-                            synopsis: modalData.synopsis
+                            title: modalData.title || '',
+                            author: modalData.author || '',
+                            category: modalData.category || [],
+                            wordCount: modalData.wordCount || '',
+                            addDate: modalData.addDate || '',
+                            reviewUrl: modalData.reviewUrl || '',
+                            synopsis: modalData.synopsis || ''
                         });
                         showToast("書籍資料已更新");
                     } else {
@@ -517,6 +520,7 @@
                     }
                     closeModal();
                 } catch (error) {
+                    console.error("Action Error:", error);
                     showToast("操作失敗，請稍後再試", "error");
                 }
             };
@@ -545,18 +549,12 @@
 
             const filteredBooks = useMemo(() => {
                 let list = books;
-                
-                // 狀態篩選
                 if (statusFilter !== 'all') {
                     list = list.filter(b => b.status === statusFilter);
                 }
-
-                // 評分篩選 (僅針對已完食或有評分的書)
                 if (ratingFilter > 0) {
                     list = list.filter(b => (b.rating || 0) >= ratingFilter);
                 }
-
-                // 搜尋詞篩選
                 if (searchTerm.trim()) {
                     const term = searchTerm.toLowerCase();
                     list = list.filter(b => (
@@ -565,7 +563,6 @@
                         (b.category && b.category.some(c => c.toLowerCase().includes(term)))
                     ));
                 }
-                
                 return list;
             }, [books, searchTerm, statusFilter, ratingFilter]);
             
@@ -669,7 +666,7 @@
                             <div className="grid grid-cols-2 gap-3 md:gap-4">
                                 <div className="bg-white/50 p-4 md:p-5 rounded-2xl border border-stone-200 flex flex-col justify-between relative overflow-hidden soft-shadow">
                                     <div className="absolute right-0 top-0 p-3 opacity-5 text-wood-500"><Hourglass size={40}/></div>
-                                    <div className="text-xs md:text-sm text-sub font-medium mb-1">未讀</div>
+                                    <div className="text-xs md:text-sm text-sub font-medium mb-1">待讀</div>
                                     <div className="text-3xl md:text-4xl font-bold text-stone-600 flex items-baseline gap-1 md:gap-2">
                                         {stats.total.reading} <span className="text-xs md:text-sm font-normal text-stone-400">本</span>
                                     </div>
@@ -728,7 +725,6 @@
                                         {loading && <RefreshCw className="animate-spin text-stone-400 w-4 h-4" />}
                                     </div>
                                     
-                                    {/* 評分篩選下拉選單 */}
                                     <div className="relative">
                                         <button 
                                             onClick={() => setIsRatingMenuOpen(!isRatingMenuOpen)}
@@ -764,7 +760,6 @@
                                 </div>
 
                                 <div className="flex flex-col md:flex-row md:items-center gap-3">
-                                    {/* 狀態篩選按鈕 */}
                                     <div className="flex flex-wrap gap-1 md:gap-2">
                                         {[
                                             { id: 'all', label: '全部' },
@@ -865,15 +860,15 @@
                                     <div className="mb-6">
                                         {modalType === 'edit' && (
                                             <div className="space-y-4">
-                                                <input placeholder="書名" value={modalData.title} onChange={e=>setModalData({...modalData, title:e.target.value})} className="w-full p-2 bg-white/50 border-b border-stone-200 outline-none" />
-                                                <input placeholder="作者" value={modalData.author} onChange={e=>setModalData({...modalData, author:e.target.value})} className="w-full p-2 bg-white/50 border-b border-stone-200 outline-none" />
-                                                <CategoryPicker selectedCategories={modalData.category} onToggle={toggleEditBookCategory} allCategories={categories} onAddNew={(name) => handleAddNewCategoryWrapper(name, setModalData)} onDelete={handleDeleteCategory} />
+                                                <div className="space-y-1"><label className="text-[10px] text-sub ml-1 uppercase tracking-wider font-bold">書名</label><input placeholder="書名" value={modalData.title} onChange={e=>setModalData({...modalData, title:e.target.value})} className="w-full p-2 bg-white/50 border-b border-stone-200 outline-none focus:border-wood-300" /></div>
+                                                <div className="space-y-1"><label className="text-[10px] text-sub ml-1 uppercase tracking-wider font-bold">作者</label><input placeholder="作者" value={modalData.author} onChange={e=>setModalData({...modalData, author:e.target.value})} className="w-full p-2 bg-white/50 border-b border-stone-200 outline-none focus:border-wood-300" /></div>
+                                                <div className="space-y-1"><label className="text-[10px] text-sub ml-1 uppercase tracking-wider font-bold">分類標籤</label><CategoryPicker selectedCategories={modalData.category || []} onToggle={toggleEditBookCategory} allCategories={categories} onAddNew={(name) => handleAddNewCategoryWrapper(name, setModalData)} onDelete={handleDeleteCategory} /></div>
                                                 <div className="flex gap-2">
-                                                    <input type="number" placeholder="字數" value={modalData.wordCount} onChange={e=>setModalData({...modalData, wordCount:e.target.value})} className="w-1/2 p-2 bg-white/50 border-b border-stone-200 outline-none" />
-                                                    <input type="date" value={modalData.addDate} onChange={e=>setModalData({...modalData, addDate:e.target.value})} className="w-1/2 p-2 bg-white/50 border-b border-stone-200 outline-none" />
+                                                    <div className="w-1/2 space-y-1"><label className="text-[10px] text-sub ml-1 uppercase tracking-wider font-bold">字數/頁數</label><input type="number" placeholder="字數" value={modalData.wordCount} onChange={e=>setModalData({...modalData, wordCount:e.target.value})} className="w-full p-2 bg-white/50 border-b border-stone-200 outline-none focus:border-wood-300" /></div>
+                                                    <div className="w-1/2 space-y-1"><label className="text-[10px] text-sub ml-1 uppercase tracking-wider font-bold">加入日期</label><input type="date" value={modalData.addDate} onChange={e=>setModalData({...modalData, addDate:e.target.value})} className="w-full p-2 bg-white/50 border-b border-stone-200 outline-none focus:border-wood-300" /></div>
                                                 </div>
-                                                <input placeholder="推薦網址" value={modalData.reviewUrl} onChange={e=>setModalData({...modalData, reviewUrl:e.target.value})} className="w-full p-2 bg-white/50 border-b border-stone-200 outline-none" />
-                                                <textarea placeholder="大綱" value={modalData.synopsis} onChange={e=>setModalData({...modalData, synopsis:e.target.value})} className="w-full p-3 bg-white/50 rounded-lg outline-none h-24 resize-none border border-stone-200" />
+                                                <div className="space-y-1"><label className="text-[10px] text-sub ml-1 uppercase tracking-wider font-bold">推薦連結</label><input placeholder="推薦網址" value={modalData.reviewUrl} onChange={e=>setModalData({...modalData, reviewUrl:e.target.value})} className="w-full p-2 bg-white/50 border-b border-stone-200 outline-none focus:border-wood-300" /></div>
+                                                <div className="space-y-1"><label className="text-[10px] text-sub ml-1 uppercase tracking-wider font-bold">故事大綱</label><textarea placeholder="大綱" value={modalData.synopsis} onChange={e=>setModalData({...modalData, synopsis:e.target.value})} className="w-full p-3 bg-white/50 rounded-lg outline-none h-24 resize-none border border-stone-200 focus:border-wood-300 text-sm" /></div>
                                             </div>
                                         )}
                                         {modalType === 'finish' && (
