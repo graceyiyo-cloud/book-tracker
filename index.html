@@ -166,6 +166,46 @@
                 setFilterText(''); 
             };
 
+            const handleKeyDown = async (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const trimmedInput = filterText.trim();
+                    if (!trimmedInput) return;
+
+                    // 支援逗號分隔：好笑,宮鬥,穿越 (支援半形與全形逗號)
+                    const tagsToAdd = trimmedInput.split(/[，,]/).map(t => t.trim()).filter(t => t !== "");
+
+                    if (tagsToAdd.length > 1) {
+                        // 批量處理
+                        for (const tag of tagsToAdd) {
+                            if (!selectedCategories.includes(tag)) {
+                                if (allCategories.includes(tag)) {
+                                    onToggle(tag);
+                                } else {
+                                    // 如果是不存在的標籤，則調用新增標籤
+                                    await onAddNew(tag);
+                                }
+                            }
+                        }
+                        setFilterText('');
+                    } else {
+                        // 單個標籤原本的邏輯
+                        const singleTag = tagsToAdd[0];
+                        if (filtered.length > 0) {
+                            const firstMatch = filtered.find(c => !selectedCategories.includes(c));
+                            if (firstMatch) {
+                                handleSelect(firstMatch);
+                                return;
+                            }
+                        }
+                        if (!allCategories.includes(singleTag)) {
+                            await onAddNew(singleTag);
+                            setFilterText('');
+                        }
+                    }
+                }
+            };
+
             return (
                 <div className="w-full">
                     <div className="flex flex-wrap gap-2 items-center min-h-[40px] p-2 border-b border-wood-200">
@@ -188,15 +228,16 @@
                         <div className="mt-2 p-3 bg-stone-50 rounded-xl border border-stone-200 shadow-sm animate-fade-in relative z-10">
                             <input 
                                 type="text" 
-                                placeholder="搜尋或建立新分類..." 
+                                placeholder="搜尋或輸入「A,B,C」批量建立 (按 Enter)" 
                                 value={filterText}
                                 onChange={e => setFilterText(e.target.value)}
+                                onKeyDown={handleKeyDown}
                                 className="w-full mb-3 p-2 bg-white rounded-lg text-sm outline-none focus:ring-1 focus:ring-wood-300 border border-stone-200"
                                 autoFocus
                             />
                             
                             <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto no-scrollbar content-start">
-                                {filterText && !allCategories.includes(filterText) && (
+                                {filterText && !allCategories.includes(filterText) && !filterText.includes(',') && !filterText.includes('，') && (
                                     <button 
                                         type="button" 
                                         onClick={() => { onAddNew(filterText); setFilterText(''); }}
@@ -414,8 +455,8 @@
                 if (!catName.trim()) return;
                 const name = catName.trim();
                 if (categories.includes(name)) {
-                    showToast("分類已存在", "error");
-                    return;
+                    // 如果已存在就直接回傳，不再報錯（因為批量時可能有重複）
+                    return name; 
                 }
                 const updatedCats = [...categories, name];
                 await updateCategoriesInDb(updatedCats);
@@ -454,10 +495,16 @@
             const handleAddNewCategoryWrapper = async (name, targetStateSetter) => {
                  const newName = await addNewCategory(name);
                  if(newName && targetStateSetter) {
-                    targetStateSetter(prev => ({
-                        ...prev,
-                        category: [...(prev.category || []), newName]
-                    }));
+                    targetStateSetter(prev => {
+                        const currentCats = Array.isArray(prev.category) ? prev.category : [];
+                        if (!currentCats.includes(newName)) {
+                            return {
+                                ...prev,
+                                category: [...currentCats, newName]
+                            };
+                        }
+                        return prev;
+                    });
                  }
             };
 
@@ -620,7 +667,6 @@
                 </div>
             );
 
-            // 導向外部搜尋的功能
             const handleWebSearch = (book, e) => {
                 e.stopPropagation();
                 const query = encodeURIComponent(`${book.title} ${book.author || ''}`);
