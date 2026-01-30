@@ -118,7 +118,7 @@
         import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
         import { 
             BookOpen, Search, Plus, Trash2, CheckCircle, BookX, 
-            Calendar, User, LogIn, RefreshCw, TrendingUp, Link as LinkIcon, FileText, PenTool, Trophy, Hourglass, Star, X, Tag, RotateCcw, AlertTriangle, Filter, LogOut, MessageSquare, Edit3, ChevronDown, ExternalLink, Pin, PinOff
+            Calendar, User, LogIn, RefreshCw, TrendingUp, Link as LinkIcon, FileText, PenTool, Trophy, Hourglass, Star, X, Tag, RotateCcw, AlertTriangle, Filter, LogOut, MessageSquare, Edit3, ChevronDown, ExternalLink, Pin, PinOff, ChevronUp
         } from 'https://esm.sh/lucide-react@0.344.0';
         
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
@@ -196,7 +196,7 @@
                     </div>
                     {isOpen && (
                         <div className="mt-2 p-3 bg-stone-50 rounded-xl border border-stone-200 shadow-sm animate-fade-in relative z-10">
-                            <input type="text" placeholder="搜尋或輸入「A,B,C」批量建立 (按 Enter)" 
+                            <input type="text" placeholder="搜尋或輸入「A,B,C」批次建立 (按 Enter)" 
                                 value={filterText} onChange={e => setFilterText(e.target.value)} onKeyDown={handleKeyDown}
                                 className="w-full mb-3 p-2 bg-white rounded-lg text-sm outline-none focus:ring-1 focus:ring-wood-300 border border-stone-200" autoFocus />
                             <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto no-scrollbar content-start">
@@ -243,6 +243,7 @@
             const [statusFilter, setStatusFilter] = useState('all'); 
             const [ratingFilter, setRatingFilter] = useState(0); 
             const [isRatingMenuOpen, setIsRatingMenuOpen] = useState(false);
+            const [isAddFormOpen, setIsAddFormOpen] = useState(false);
             const [newBook, setNewBook] = useState({
                 title: '', author: '', wordCount: '', isWordCountManual: false,
                 addDate: new Date().toISOString().split('T')[0],
@@ -335,6 +336,7 @@
                 try {
                     await addDoc(collection(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`), { ...newBook, status: 'reading', createdAt: serverTimestamp() });
                     setNewBook({ title: '', author: '', wordCount: '', isWordCountManual: false, addDate: new Date().toISOString().split('T')[0], reviewUrl: '', synopsis: '', category: [], isPinned: false });
+                    setIsAddFormOpen(false); 
                     showToast("新增成功！");
                 } catch (error) { showToast("新增失敗", "error"); }
             };
@@ -471,7 +473,6 @@
                                         <div className="text-2xl md:text-3xl font-bold text-stone-600 flex items-baseline gap-1 md:gap-2">
                                             {stats.total.reading} <span className="text-[10px] md:text-xs font-normal text-stone-400">本</span>
                                         </div>
-                                        {/* 修正：增加與右側對齊的透明佔位空間 */}
                                         <div className="text-[9px] md:text-[10px] opacity-0 h-[12px] md:h-[15px] select-none">spacer</div>
                                     </div>
                                 </div>
@@ -499,20 +500,41 @@
                                 </div>
                             )}
                         </section>
-                        <section className="bg-white/80 rounded-2xl md:rounded-3xl border border-stone-200 p-5 md:p-8 soft-shadow">
-                            <h2 className="text-lg md:text-xl font-bold mb-4 md:mb-6 flex items-center gap-2 text-ink border-l-4 border-wood-300 pl-3"><PenTool className="text-wood-400 w-5 h-5" /> 紀錄新書</h2>
-                            <form onSubmit={addBook} className="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-5">
-                                <div className="md:col-span-5"><input placeholder="書名" value={newBook.title} onChange={e=>setNewBook({...newBook, title:e.target.value})} className="w-full p-2 bg-transparent border-b border-stone-200 focus:border-wood-300 outline-none placeholder-stone-300" required /></div>
-                                <div className="md:col-span-4"><input placeholder="作者" value={newBook.author} onChange={e=>setNewBook({...newBook, author:e.target.value})} className="w-full p-2 bg-transparent border-b border-stone-200 focus:border-wood-300 outline-none placeholder-stone-300" /></div>
-                                <div className="md:col-span-3"><button type="button" onClick={searchBookInfo} disabled={isSearching || !newBook.title} className="w-full h-full text-wood-500 bg-stone-100 hover:bg-stone-200 rounded-lg transition flex items-center justify-center gap-1 text-sm font-medium disabled:opacity-50 py-3 md:py-2">{isSearching ? <RefreshCw className="animate-spin w-4 h-4" /> : <Search className="w-4 h-4" />} 搜尋</button></div>
-                                <div className="md:col-span-12 relative"><CategoryPicker selectedCategories={newBook.category} onToggle={toggleNewBookCategory} allCategories={categories} onAddNew={(name) => handleAddNewCategoryWrapper(name, setNewBook)} onDelete={handleDeleteCategory} /></div>
-                                <div className="md:col-span-4"><div className="relative"><input type="number" placeholder="字數/頁數" value={newBook.wordCount} onChange={e=>setNewBook({...newBook, wordCount:e.target.value, isWordCountManual:true})} className="w-full p-2 bg-transparent border-b border-stone-200 focus:border-wood-300 outline-none placeholder-stone-300" />{!newBook.isWordCountManual && newBook.wordCount && <span className="absolute right-0 top-2 text-[10px] text-stone-400 bg-stone-50 px-1 rounded">估算</span>}</div></div>
-                                <div className="md:col-span-4"><input type="date" value={newBook.addDate} onChange={e=>setNewBook({...newBook, addDate:e.target.value})} className="w-full p-2 bg-transparent border-b border-stone-200 text-sub focus:border-wood-300 outline-none" /></div>
-                                <div className="md:col-span-4"><input type="url" placeholder="推薦網址" value={newBook.reviewUrl} onChange={e=>setNewBook({...newBook, reviewUrl:e.target.value})} className="w-full p-2 bg-transparent border-b border-stone-200 focus:border-wood-300 outline-none placeholder-stone-300" /></div>
-                                <div className="md:col-span-12"><textarea placeholder="故事大綱..." value={newBook.synopsis} onChange={e=>setNewBook({...newBook, synopsis:e.target.value})} className="w-full p-3 bg-stone-50/50 rounded-xl border border-stone-200 focus:border-stone-300 outline-none h-24 placeholder-stone-300 resize-none text-base" /></div>
-                                <div className="md:col-span-12 flex justify-end"><button type="submit" className="w-full md:w-auto bg-wood-400 text-white px-8 py-3 md:py-2.5 rounded-xl font-medium hover:bg-wood-500 transition shadow-md flex items-center justify-center gap-2"><Plus size={18} /> 加入書櫃</button></div>
-                            </form>
+
+                        <section className="bg-white/80 rounded-2xl md:rounded-3xl border border-stone-200 p-0 overflow-hidden soft-shadow transition-all duration-300">
+                            <div 
+                                onClick={() => setIsAddFormOpen(!isAddFormOpen)}
+                                className="p-4 md:p-5 cursor-pointer flex items-center justify-between hover:bg-stone-50/50 transition-colors"
+                            >
+                                <h2 className="text-[0.825rem] font-bold flex items-center gap-2 text-ink border-l-4 border-wood-300 pl-3 uppercase tracking-wider">
+                                    <PenTool className="text-wood-400 w-3.5 h-3.5" /> 紀錄新書
+                                </h2>
+                                <div className="flex items-center gap-2 text-sub">
+                                    {!isAddFormOpen && <span className="text-[10px] font-normal opacity-60">點擊展開</span>}
+                                    {isAddFormOpen ? <ChevronUp size={16} className="text-stone-400" /> : <Plus size={16} className="text-wood-400" />}
+                                </div>
+                            </div>
+
+                            {isAddFormOpen && (
+                                <div className="p-5 md:p-8 pt-0 md:pt-0 animate-fade-in">
+                                    <form onSubmit={addBook} className="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-5 border-t border-stone-100 pt-5 md:pt-6">
+                                        <div className="md:col-span-5"><input placeholder="書名" value={newBook.title} onChange={e=>setNewBook({...newBook, title:e.target.value})} className="w-full p-2 bg-transparent border-b border-stone-200 focus:border-wood-300 outline-none placeholder-stone-300" required /></div>
+                                        <div className="md:col-span-4"><input placeholder="作者" value={newBook.author} onChange={e=>setNewBook({...newBook, author:e.target.value})} className="w-full p-2 bg-transparent border-b border-stone-200 focus:border-wood-300 outline-none placeholder-stone-300" /></div>
+                                        <div className="md:col-span-3 flex items-end md:items-center"><button type="button" onClick={searchBookInfo} disabled={isSearching || !newBook.title} className="w-full h-10 md:h-9 text-wood-500 bg-stone-100 hover:bg-stone-200 rounded-lg transition flex items-center justify-center gap-1 text-xs md:text-sm font-medium disabled:opacity-50">{isSearching ? <RefreshCw className="animate-spin w-4 h-4" /> : <Search className="w-3.5 h-3.5" />} 搜尋</button></div>
+                                        <div className="md:col-span-12 relative"><CategoryPicker selectedCategories={newBook.category} onToggle={toggleNewBookCategory} allCategories={categories} onAddNew={(name) => handleAddNewCategoryWrapper(name, setNewBook)} onDelete={handleDeleteCategory} /></div>
+                                        <div className="md:col-span-4"><div className="relative"><input type="number" placeholder="字數/頁數" value={newBook.wordCount} onChange={e=>setNewBook({...newBook, wordCount:e.target.value, isWordCountManual:true})} className="w-full p-2 bg-transparent border-b border-stone-200 focus:border-wood-300 outline-none placeholder-stone-300" />{!newBook.isWordCountManual && newBook.wordCount && <span className="absolute right-0 top-2 text-[10px] text-stone-400 bg-stone-50 px-1 rounded">估算</span>}</div></div>
+                                        <div className="md:col-span-4"><input type="date" value={newBook.addDate} onChange={e=>setNewBook({...newBook, addDate:e.target.value})} className="w-full p-2 bg-transparent border-b border-stone-200 text-sub focus:border-wood-300 outline-none" /></div>
+                                        <div className="md:col-span-4"><input type="url" placeholder="推薦網址" value={newBook.reviewUrl} onChange={e=>setNewBook({...newBook, reviewUrl:e.target.value})} className="w-full p-2 bg-transparent border-b border-stone-200 focus:border-wood-300 outline-none placeholder-stone-300" /></div>
+                                        <div className="md:col-span-12"><textarea placeholder="故事大綱..." value={newBook.synopsis} onChange={e=>setNewBook({...newBook, synopsis:e.target.value})} className="w-full p-3 bg-stone-50/50 rounded-xl border border-stone-200 focus:border-stone-300 outline-none h-24 placeholder-stone-300 resize-none text-base" /></div>
+                                        <div className="md:col-span-12 flex justify-end gap-3 items-center">
+                                            <button type="button" onClick={() => setIsAddFormOpen(false)} className="px-4 py-2 rounded-xl text-sub hover:bg-stone-100 transition text-xs md:text-sm">取消</button>
+                                            <button type="submit" className="w-fit bg-wood-400 text-white px-5 py-2 rounded-xl font-medium hover:bg-wood-500 transition shadow-md flex items-center justify-center gap-2 text-xs md:text-sm"><Plus size={16} /> 加入書櫃</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            )}
                         </section>
+
                         <section className="space-y-4">
                             <div className="flex flex-col gap-3 mb-2 px-2">
                                 <div className="flex flex-wrap items-center justify-between gap-3">
@@ -522,8 +544,12 @@
                                     </div>
                                 </div>
                                 <div className="flex flex-col md:flex-row md:items-center gap-3">
-                                    <div className="flex flex-wrap gap-1 md:gap-2">{[{ id: 'all', label: '全部' }, { id: 'reading', label: '待讀' }, { id: 'finished', label: '已完食' }, { id: 'dropped', label: '棄書' }].map(btn => (<button key={btn.id} onClick={() => setStatusFilter(btn.id)} className={`px-3 py-1 rounded-full text-[10px] md:text-xs font-medium transition-all border ${statusFilter === btn.id ? 'bg-wood-400 text-white border-wood-500 shadow-sm' : 'bg-white/60 text-stone-500 border-stone-200 hover:border-wood-200'}`}>{btn.label}</button>))}</div>
-                                    <div className="flex-1 flex items-center gap-2 bg-white/60 px-3 py-2 rounded-xl border border-stone-200 soft-shadow"><Filter size={16} className="text-stone-400" /><input type="text" placeholder="搜尋書名、作者或分類..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="bg-transparent border-none outline-none w-full text-sm text-ink placeholder-stone-300" />{searchTerm && <button onClick={() => setSearchTerm('')}><X size={14} className="text-stone-400"/></button>}</div>
+                                    <div className="flex flex-wrap gap-1 md:gap-2">{[{ id: 'all', label: '全部' }, { id: 'reading', label: '待讀' }, { id: 'finished', label: '已完食' }, { id: 'dropped', label: '棄書' }].map(btn => (<button key={btn.id} onClick={() => setStatusFilter(btn.id)} className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all border ${statusFilter === btn.id ? 'bg-wood-400 text-white border-wood-500 shadow-sm' : 'bg-white/60 text-stone-500 border-stone-200 hover:border-wood-200'}`}>{btn.label}</button>))}</div>
+                                    <div className="flex-1 flex items-center gap-2 bg-white/60 px-3 py-2 rounded-xl border border-stone-200 soft-shadow">
+                                        <Filter size={16} className="text-stone-400" />
+                                        <input type="text" placeholder="搜尋書名、作者或分類..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="bg-transparent border-none outline-none w-full text-xs text-ink placeholder-stone-300" />
+                                        {searchTerm && <button onClick={() => setSearchTerm('')}><X size={14} className="text-stone-400"/></button>}
+                                    </div>
                                 </div>
                             </div>
                             {!loading && filteredBooks.length === 0 && (<div className="text-center py-10 text-stone-400 bg-white/30 rounded-2xl border border-dashed border-stone-200"><BookOpen className="mx-auto mb-2 opacity-30 w-10 h-10" /><p className="text-sm">{searchTerm || statusFilter !== 'all' || ratingFilter > 0 ? '找不到符合條件的書籍。' : '書櫃空蕩蕩，選個安靜的午後開始閱讀吧。'}</p></div>)}
@@ -548,7 +574,6 @@
                                                 {book.status === 'finished' && (<div className="mt-2 bg-sage-50/50 p-3 rounded-lg border border-sage-100"><p className="text-sage-text flex items-center gap-2 text-xs md:text-sm font-medium"><CheckCircle size={14}/> 完食於 {book.finishDate}</p>{book.review && <p className="text-sage-600 text-xs mt-1 pl-5 border-l-2 border-sage-200 ml-0.5 whitespace-pre-wrap">{book.review}</p>}</div>)}
                                                 {book.status === 'dropped' && <div className="text-dried-text mt-2 bg-dried-50/50 p-2 rounded-lg border border-dried-100 text-xs md:text-sm"><p className="flex items-center gap-2 font-medium"><BookX size={14}/> 第{book.dropChapter}章棄書</p>{book.dropDate && <p className="text-xs opacity-60 mt-1 ml-6">日期: {book.dropDate}</p>}</div>}
                                                 {book.reviewUrl && <div className="mt-2"><a href={book.reviewUrl} target="_blank" className="inline-flex items-center gap-1 text-wood-400 hover:text-wood-600 hover:underline transition text-xs"><LinkIcon size={12}/> 閱讀推薦文章</a></div>}
-                                                {/* 修正：精簡大綱容器，移除所有多餘外距 */}
                                                 {book.synopsis && (
                                                     <div className="mt-2 flex flex-col">
                                                         <button onClick={()=>toggleSynopsis(book.id)} className="flex items-center gap-1.5 text-xs text-stone-400 hover:text-stone-600 transition py-1 self-start">
@@ -560,32 +585,29 @@
                                             </div>
                                         </div>
                                         
-                                        {/* 按鈕區域：修正手機與電腦版佈局差異 */}
                                         <div className="flex mt-1 pt-1 border-t border-stone-100 flex-row gap-1.5 
-                                            md:mt-0 md:pt-0 md:border-t-0 md:border-l md:pl-4 md:flex-col md:w-44 md:gap-2 shrink-0">
+                                            md:mt-0 md:pt-0 md:border-t-0 md:border-l md:pl-4 md:flex-col md:w-12 md:gap-2 shrink-0">
                                             
-                                            {/* 第一區塊 (文字按鈕) */}
-                                            <div className="flex gap-1.5 flex-[3] md:flex-none md:gap-2">
+                                            {/* 完食、棄書、重設 按鈕移除文字並調整寬度 */}
+                                            <div className="flex gap-1.5 flex-1 md:flex-none md:flex-col md:gap-2">
                                                 {book.status === 'reading' ? (
                                                     <>
-                                                       <button onClick={(e)=>openModal(book, 'finish', e)} className="flex-1 py-1.5 px-1 md:py-2 bg-sage-50 text-sage-600 hover:bg-sage-100 rounded-xl text-xs md:text-sm font-normal transition flex flex-col md:flex-row items-center justify-center gap-1 border border-sage-100 shadow-sm"><CheckCircle size={14} /> 完食</button>
-                                                       <button onClick={(e)=>openModal(book, 'drop', e)} className="flex-1 py-1.5 px-1 md:py-2 bg-dried-50 text-dried-600 hover:bg-dried-100 rounded-xl text-xs md:text-sm font-normal transition flex flex-col md:flex-row items-center justify-center gap-1 border border-dried-100 shadow-sm"><BookX size={14} /> 棄書</button>
+                                                       <button onClick={(e)=>openModal(book, 'finish', e)} className="flex-1 py-2 bg-sage-50 text-sage-600 hover:bg-sage-100 rounded-xl transition flex items-center justify-center border border-sage-100 shadow-sm" title="完食"><CheckCircle size={18} /></button>
+                                                       <button onClick={(e)=>openModal(book, 'drop', e)} className="flex-1 py-2 bg-dried-50 text-dried-600 hover:bg-dried-100 rounded-xl transition flex items-center justify-center border border-dried-100 shadow-sm" title="棄書"><BookX size={18} /></button>
                                                     </>
                                                 ) : (
-                                                    <button onClick={(e)=>openModal(book, 'reset', e)} className="flex-1 py-1.5 px-1 md:py-2 bg-stone-50 text-stone-600 hover:bg-stone-100 rounded-xl text-xs md:text-sm font-normal transition flex flex-col md:flex-row items-center justify-center gap-1 border border-stone-200 shadow-sm md:w-full"><RotateCcw size={14} /> 重設</button>
+                                                    <button onClick={(e)=>openModal(book, 'reset', e)} className="flex-1 py-2 bg-stone-50 text-stone-600 hover:bg-stone-100 rounded-xl transition flex items-center justify-center border border-stone-200 shadow-sm md:w-full" title="重設"><RotateCcw size={18} /></button>
                                                 )}
                                             </div>
 
-                                            {/* 第二區塊 (純圖示按鈕) */}
-                                            <div className="flex gap-1.5 flex-[3] md:flex-none md:gap-2">
-                                                <button onClick={(e) => togglePin(book, e)} className={`flex-1 py-1.5 md:py-2 rounded-xl transition flex items-center justify-center border shadow-sm ${book.isPinned ? 'bg-wood-500 text-white border-wood-600' : 'bg-white text-stone-500 border-stone-200'}`} title={book.isPinned ? "取消釘選" : "優先釘選"}>
+                                            <div className="flex gap-1.5 flex-1 md:flex-none md:flex-col md:gap-2">
+                                                <button onClick={(e) => togglePin(book, e)} className={`flex-1 py-2 rounded-xl transition flex items-center justify-center border shadow-sm ${book.isPinned ? 'bg-wood-500 text-white border-wood-600' : 'bg-white text-stone-500 border-stone-200'}`} title={book.isPinned ? "取消釘選" : "優先釘選"}>
                                                     {book.isPinned ? <PinOff size={16} /> : <Pin size={16} />}
                                                 </button>
-                                                <button onClick={(e)=>openModal(book, 'edit', e)} className="flex-1 py-1.5 md:py-2 bg-white text-stone-400 hover:text-stone-600 rounded-xl border border-stone-200 shadow-sm flex items-center justify-center" title="編輯">
+                                                <button onClick={(e)=>openModal(book, 'edit', e)} className="flex-1 py-2 bg-white text-stone-400 hover:text-stone-600 rounded-xl border border-stone-200 shadow-sm flex items-center justify-center" title="編輯">
                                                     <Edit3 size={16} />
                                                 </button>
-                                                {/* 手機版：此按鈕會與上面並排 / 電腦版：此按鈕也會排在同一列 */}
-                                                <button onClick={(e)=>openModal(book, 'delete', e)} className="flex-1 py-1.5 md:py-2 bg-white text-stone-300 hover:text-dried-500 rounded-xl border border-stone-200 shadow-sm flex items-center justify-center" title="刪除">
+                                                <button onClick={(e)=>openModal(book, 'delete', e)} className="flex-1 py-2 bg-white text-stone-300 hover:text-dried-500 rounded-xl border border-stone-200 shadow-sm flex items-center justify-center" title="刪除">
                                                     <Trash2 size={16} />
                                                 </button>
                                             </div>
