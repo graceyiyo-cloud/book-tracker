@@ -180,6 +180,15 @@
                     }
                 }
             };
+
+            // 優化：處理刪除邏輯，不透過全域 Modal
+            const handleQuickDelete = (cat, e) => {
+                e.stopPropagation();
+                if (window.confirm(`確定要將「${cat}」從分類清單中永久刪除嗎？`)) {
+                    onDelete(cat, e);
+                }
+            };
+
             return (
                 <div className="w-full">
                     <div className="flex flex-wrap gap-2 items-center min-h-[40px] p-2 border-b border-wood-200">
@@ -196,7 +205,7 @@
                     </div>
                     {isOpen && (
                         <div className="mt-2 p-3 bg-stone-50 rounded-xl border border-stone-200 shadow-sm animate-fade-in relative z-10">
-                            <input type="text" placeholder="搜尋或輸入「A B C」批次建立 (支援空格/逗號)" 
+                            <input type="text" placeholder="搜尋或輸入「A B C」批次建立" 
                                 value={filterText} onChange={e => setFilterText(e.target.value)} onKeyDown={handleKeyDown}
                                 className="w-full mb-3 p-2 bg-white rounded-lg text-sm outline-none focus:ring-1 focus:ring-wood-300 border border-stone-200" autoFocus />
                             <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto no-scrollbar content-start">
@@ -215,7 +224,7 @@
                                                 className="bg-stone-100 text-stone-600 border border-stone-200 text-xs px-3 py-1.5 rounded-full hover:bg-stone-200 hover:border-stone-400 transition">
                                                 {cat}
                                             </button>
-                                            <button type="button" onClick={(e) => onDelete(cat, e)}
+                                            <button type="button" onClick={(e) => handleQuickDelete(cat, e)}
                                                 className="absolute -top-1 -right-1 bg-white text-stone-300 hover:text-dried-500 rounded-full p-0.5 shadow-sm border border-stone-100 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <X size={10} strokeWidth={3} />
                                             </button>
@@ -351,7 +360,12 @@
                 await updateCategoriesInDb(updatedCats);
                 showToast(`已新增分類「${name}」`); return name; 
             };
-            const handleDeleteCategory = async (catToDelete, e) => { e.stopPropagation(); setModalData({ category: catToDelete }); setModalType('deleteCategory'); };
+            const handleDeleteCategory = async (catToDelete, e) => { 
+                e.stopPropagation(); 
+                const updatedCats = categories.filter(c => c !== catToDelete); 
+                await updateCategoriesInDb(updatedCats); 
+                showToast(`已刪除分類「${catToDelete}」`); 
+            };
             const toggleNewBookCategory = (cat) => { setNewBook(prev => { const currentCats = Array.isArray(prev.category) ? prev.category : []; if (currentCats.includes(cat)) { return { ...prev, category: currentCats.filter(c => c !== cat) }; } else { return { ...prev, category: [...currentCats, cat] }; } }); };
             const toggleEditBookCategory = (cat) => { setModalData(prev => { const currentCats = Array.isArray(prev.category) ? prev.category : []; if (currentCats.includes(cat)) { return { ...prev, category: currentCats.filter(c => c !== cat) }; } else { return { ...prev, category: [...currentCats, cat] }; } }); };
             const handleAddNewCategoryWrapper = async (name, targetStateSetter) => {
@@ -372,10 +386,9 @@
                 if (!modalType) return;
                 try {
                     if (modalType === 'logout') { localStorage.removeItem('reading_tracker_custom_id'); setCustomId(''); setBooks([]); setIsLoginMode(true); closeModal(); return; }
-                    if (modalType === 'deleteCategory') { const catToDelete = modalData.category; const updatedCats = categories.filter(c => c !== catToDelete); await updateCategoriesInDb(updatedCats); showToast(`已刪除分類「${catToDelete}」`); closeModal(); return; }
                     if (modalType === 'confirmAddDuplicate') { executeAddBook(); closeModal(); return; }
                     const targetId = activeBookId || modalData.id;
-                    if (!targetId && modalType !== 'logout' && modalType !== 'deleteCategory') return;
+                    if (!targetId && modalType !== 'logout') return;
                     const bookRef = doc(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`, targetId);
                     if (modalType === 'delete') { await deleteDoc(bookRef); showToast("已刪除書籍"); } 
                     else if (modalType === 'edit') { await updateDoc(bookRef, { title: modalData.title || '', author: modalData.author || '', category: modalData.category || [], wordCount: modalData.wordCount || '', addDate: modalData.addDate || '', reviewUrl: modalData.reviewUrl || '', synopsis: modalData.synopsis || '' }); showToast("書籍資料已更新"); } 
@@ -436,13 +449,10 @@
                 </div>
             );
             const handleWebSearch = (book, e) => { e.stopPropagation(); const query = encodeURIComponent(`${book.title} ${book.author || ''}`); window.open(`https://www.google.com/search?q=${query}`, '_blank'); };
-            
-            // 新增功能：點擊標籤進行搜尋
             const handleCategoryClick = (cat, e) => {
                 e.stopPropagation();
                 setSearchTerm(cat);
                 showToast(`已過濾分類：「${cat}」`);
-                // 滾動到列表頂部方便查看
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             };
 
@@ -631,17 +641,17 @@
                             </div>
                         </section>
 
-                        {(activeBookId || modalType === 'logout' || modalType === 'deleteCategory' || modalType === 'confirmAddDuplicate') && (
+                        {(activeBookId || modalType === 'logout' || modalType === 'confirmAddDuplicate') && (
                             <div className="fixed inset-0 bg-stone-800/20 backdrop-blur-sm flex items-end md:items-center justify-center z-50 p-0 md:p-4" onClick={closeModal}>
                                 <div className="bg-paper rounded-t-3xl md:rounded-3xl w-full max-w-sm p-6 md:p-8 shadow-2xl border border-stone-200 animate-modal-in max-h-[90vh] overflow-y-auto no-scrollbar" onClick={e => e.stopPropagation()}>
                                     <div className="w-10 h-1 bg-stone-200 rounded-full mx-auto mb-6 md:hidden"></div>
-                                    <h3 className="text-xl font-bold mb-4 text-center text-ink border-b border-stone-200 pb-4">{modalType === 'finish' ? '紀錄完食' : modalType === 'drop' ? '紀錄棄書' : modalType === 'reset' ? '重設狀態' : modalType === 'delete' ? '刪除書籍' : modalType === 'logout' ? '登出確認' : modalType === 'deleteCategory' ? '刪除分類' : modalType === 'confirmAddDuplicate' ? '重複確認' : '編輯書籍'}</h3>
+                                    <h3 className="text-xl font-bold mb-4 text-center text-ink border-b border-stone-200 pb-4">{modalType === 'finish' ? '紀錄完食' : modalType === 'drop' ? '紀錄棄書' : modalType === 'reset' ? '重設狀態' : modalType === 'delete' ? '刪除書籍' : modalType === 'logout' ? '登出確認' : modalType === 'confirmAddDuplicate' ? '重複確認' : '編輯書籍'}</h3>
                                     <div className="mb-6">
                                         {modalType === 'edit' && (<div className="space-y-5"><div className="space-y-1.5"><label className="text-xs md:text-sm text-sub ml-1 uppercase tracking-wider font-bold">書名</label><input placeholder="書名" value={modalData.title} onChange={e=>setModalData({...modalData, title:e.target.value})} className="w-full p-2 bg-white/50 border-b border-stone-200 outline-none focus:border-wood-300" /></div><div className="space-y-1.5"><label className="text-xs md:text-sm text-sub ml-1 uppercase tracking-wider font-bold">作者</label><input placeholder="作者" value={modalData.author} onChange={e=>setModalData({...modalData, author:e.target.value})} className="w-full p-2 bg-white/50 border-b border-stone-200 outline-none focus:border-wood-300" /></div><div className="space-y-1.5"><label className="text-xs md:text-sm text-sub ml-1 uppercase tracking-wider font-bold">分類標籤</label><CategoryPicker selectedCategories={modalData.category || []} onToggle={toggleEditBookCategory} allCategories={categories} onAddNew={(name) => handleAddNewCategoryWrapper(name, setModalData)} onDelete={handleDeleteCategory} /></div><div className="flex gap-4"><div className="w-1/2 space-y-1.5"><label className="text-xs md:text-sm text-sub ml-1 uppercase tracking-wider font-bold">字數/頁數</label><input type="number" placeholder="字數" value={modalData.wordCount} onChange={e=>setModalData({...modalData, wordCount:e.target.value})} className="w-full p-2 bg-white/50 border-b border-stone-200 outline-none focus:border-wood-300" /></div><div className="w-1/2 space-y-1.5"><label className="text-xs md:text-sm text-sub ml-1 uppercase tracking-wider font-bold">加入日期</label><input type="date" value={modalData.addDate} onChange={e=>setModalData({...modalData, addDate:e.target.value})} className="w-full p-2 bg-white/50 border-b border-stone-200 outline-none focus:border-wood-300" /></div></div><div className="space-y-1.5"><label className="text-xs md:text-sm text-sub ml-1 uppercase tracking-wider font-bold">推薦連結</label><input placeholder="推薦網址" value={modalData.reviewUrl} onChange={e=>setModalData({...modalData, reviewUrl:e.target.value})} className="w-full p-2 bg-white/50 border-b border-stone-200 outline-none focus:border-wood-300" /></div><div className="space-y-1.5"><label className="text-xs md:text-sm text-sub ml-1 uppercase tracking-wider font-bold">故事大綱</label><textarea placeholder="大綱" value={modalData.synopsis} onChange={e=>setModalData({...modalData, synopsis:e.target.value})} className="w-full p-3 bg-white/50 rounded-lg outline-none h-24 resize-none border border-stone-200 focus:border-wood-300 text-sm" /></div></div>)}
                                         {modalType === 'finish' && (<div className="bg-white/50 p-4 rounded-xl space-y-5 border border-stone-200"><input type="date" value={modalData.date} onChange={e=>setModalData({...modalData, date:e.target.value})} className="w-full bg-transparent border-b border-stone-300 outline-none p-2 text-center" /><div className="flex flex-col items-center gap-2"><label className="text-xs text-sub">給這本書一個評價吧</label><StarRating rating={modalData.rating} setRating={(r) => setModalData({...modalData, rating: r})} interactive={true} /></div><textarea placeholder="寫點什麼紀錄一下心情..." value={modalData.review} onChange={e=>setModalData({...modalData, review:e.target.value})} className="w-full p-2 bg-white rounded-lg border border-stone-200 h-20 text-sm" /></div>)}
                                         {modalType === 'drop' && (<div className="bg-white/50 p-4 rounded-xl space-y-4 border border-stone-200"><div className="space-y-1"><label className="text-xs text-sub block">棄書日期</label><input type="date" value={modalData.date} onChange={e=>setModalData({...modalData, date:e.target.value})} className="w-full bg-transparent border-b border-stone-300 outline-none p-2 text-center" /></div><div className="space-y-1"><label className="text-xs text-sub block">進度紀錄</label><input placeholder="在哪個章節停下了？" value={modalData.chapter} onChange={e=>setModalData({...modalData, chapter:e.target.value})} className="w-full bg-transparent border-b border-stone-300 outline-none p-2 text-center" /></div></div>)}
                                         {modalType === 'confirmAddDuplicate' && (<div className="text-center p-4"><div className="flex justify-center mb-4 text-dried-500"><AlertTriangle size={48} /></div><p className="mb-2 font-bold text-ink">這本書已經在書櫃中囉！</p><p className="text-sm text-sub">書名：「{newBook.title}」<br/>作者：「{newBook.author || '佚名'}」</p></div>)}
-                                        {['reset', 'delete', 'logout', 'deleteCategory'].includes(modalType) && (<div className="text-center p-4"><p className="mb-2 font-bold text-ink">{modalData.category || activeBook?.title}</p><p className="text-sm text-sub">確定執行此操作嗎？</p></div>)}
+                                        {['reset', 'delete', 'logout'].includes(modalType) && (<div className="text-center p-4"><p className="mb-2 font-bold text-ink">{activeBook?.title}</p><p className="text-sm text-sub">確定執行此操作嗎？</p></div>)}
                                     </div>
                                     <div className="flex gap-4"><button onClick={closeModal} className="flex-1 py-3 text-sub hover:bg-stone-100 rounded-xl transition text-sm">取消</button><button onClick={handleModalAction} className={`flex-1 py-3 text-white rounded-xl shadow-md text-sm font-medium ${['finish', 'edit', 'confirmAddDuplicate'].includes(modalType)?'bg-sage-500': ['reset', 'logout'].includes(modalType)?'bg-wood-400': 'bg-dried-500'}`}>確認</button></div>
                                 </div>
