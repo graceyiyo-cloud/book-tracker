@@ -162,7 +162,7 @@
                     e.preventDefault();
                     const trimmedInput = filterText.trim();
                     if (!trimmedInput) return;
-                    const tagsToAdd = trimmedInput.split(/[，,]/).map(t => t.trim()).filter(t => t !== "");
+                    const tagsToAdd = trimmedInput.split(/[，,\s]+/).map(t => t.trim()).filter(t => t !== "");
                     if (tagsToAdd.length > 1) {
                         for (const tag of tagsToAdd) {
                             if (!selectedCategories.includes(tag)) {
@@ -196,11 +196,11 @@
                     </div>
                     {isOpen && (
                         <div className="mt-2 p-3 bg-stone-50 rounded-xl border border-stone-200 shadow-sm animate-fade-in relative z-10">
-                            <input type="text" placeholder="搜尋或輸入「A,B,C」批次建立 (按 Enter)" 
+                            <input type="text" placeholder="搜尋或輸入「A B C」批次建立 (支援空格/逗號)" 
                                 value={filterText} onChange={e => setFilterText(e.target.value)} onKeyDown={handleKeyDown}
                                 className="w-full mb-3 p-2 bg-white rounded-lg text-sm outline-none focus:ring-1 focus:ring-wood-300 border border-stone-200" autoFocus />
                             <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto no-scrollbar content-start">
-                                {filterText && !allCategories.includes(filterText) && !filterText.includes(',') && !filterText.includes('，') && (
+                                {filterText && !allCategories.includes(filterText) && !/[，,\s]/.test(filterText) && (
                                     <button type="button" onClick={() => { onAddNew(filterText); setFilterText(''); }}
                                         className="bg-wood-500 text-white text-xs px-3 py-1.5 rounded-full hover:bg-wood-600 transition shadow-sm flex items-center gap-1">
                                         <Plus size={12}/> 建立「{filterText}」
@@ -436,6 +436,16 @@
                 </div>
             );
             const handleWebSearch = (book, e) => { e.stopPropagation(); const query = encodeURIComponent(`${book.title} ${book.author || ''}`); window.open(`https://www.google.com/search?q=${query}`, '_blank'); };
+            
+            // 新增功能：點擊標籤進行搜尋
+            const handleCategoryClick = (cat, e) => {
+                e.stopPropagation();
+                setSearchTerm(cat);
+                showToast(`已過濾分類：「${cat}」`);
+                // 滾動到列表頂部方便查看
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            };
+
             if (isAuthChecking) return <div className="min-h-screen flex items-center justify-center bg-paper"><RefreshCw className="animate-spin text-wood-400" /></div>;
             if (isLoginMode) {
                 return (
@@ -561,7 +571,15 @@
                                             <div className="flex flex-col md:flex-row md:justify-between md:items-start mb-2 gap-2">
                                                 <div className="min-w-0 flex-1">
                                                     <div className="flex flex-wrap gap-2 items-center mb-1">
-                                                        {book.category && (Array.isArray(book.category) ? book.category : [book.category]).map((cat, idx) => (<span key={idx} className="text-[10px] md:text-xs text-stone-500 bg-stone-100 px-2 py-0.5 rounded-sm">{cat}</span>))}
+                                                        {book.category && (Array.isArray(book.category) ? book.category : [book.category]).map((cat, idx) => (
+                                                            <button 
+                                                                key={idx} 
+                                                                onClick={(e) => handleCategoryClick(cat, e)}
+                                                                className="text-[10px] md:text-xs text-stone-500 bg-stone-100 px-2 py-0.5 rounded-sm hover:bg-wood-100 hover:text-wood-600 transition-colors"
+                                                            >
+                                                                {cat}
+                                                            </button>
+                                                        ))}
                                                         <span className={`px-2 py-0.5 rounded-full text-[10px] md:text-xs ${book.status==='finished'?'bg-sage-100 text-sage-text': book.status==='dropped'?'bg-dried-100 text-dried-text': 'bg-stone-100 text-stone-500'}`}>{book.status==='finished'?'已完食':book.status==='dropped'?'棄書':'待讀'}</span>
                                                         {book.isPinned && <span className="flex items-center gap-1 text-[10px] md:text-xs text-wood-500 bg-wood-100 px-2 py-0.5 rounded-full font-bold shadow-sm"><Pin size={10} className="fill-wood-400" /> 已釘選</span>}
                                                     </div>
@@ -585,11 +603,9 @@
                                             </div>
                                         </div>
                                         
-                                        {/* 電腦版佈局調整：完食/棄書(左右)，編輯/刪除(左右)，釘選(下面) */}
                                         <div className="flex mt-1 pt-1 border-t border-stone-100 flex-row gap-1.5 
                                             md:mt-0 md:pt-0 md:border-t-0 md:border-l md:pl-4 md:grid md:grid-cols-2 md:w-28 md:gap-2 shrink-0">
                                             
-                                            {/* 第一區塊 (完食 & 棄書 / 重設) */}
                                             {book.status === 'reading' ? (
                                                 <>
                                                    <button onClick={(e)=>openModal(book, 'finish', e)} className="flex-1 py-2 bg-sage-50 text-sage-600 hover:bg-sage-100 rounded-xl transition flex items-center justify-center border border-sage-100 shadow-sm md:w-full" title="完食"><CheckCircle size={18} /></button>
@@ -599,7 +615,6 @@
                                                 <button onClick={(e)=>openModal(book, 'reset', e)} className="flex-1 py-2 bg-stone-50 text-stone-600 hover:bg-stone-100 rounded-xl transition flex items-center justify-center border border-stone-200 shadow-sm col-span-2 md:w-full" title="重設"><RotateCcw size={18} /></button>
                                             )}
 
-                                            {/* 第二區塊 (編輯 & 刪除) */}
                                             <button onClick={(e)=>openModal(book, 'edit', e)} className="flex-1 py-2 bg-white text-stone-400 hover:text-stone-600 rounded-xl border border-stone-200 shadow-sm flex items-center justify-center md:w-full" title="編輯">
                                                 <Edit3 size={16} />
                                             </button>
@@ -607,7 +622,6 @@
                                                 <Trash2 size={16} />
                                             </button>
 
-                                            {/* 第三區塊 (釘選 - 電腦版獨佔一行) */}
                                             <button onClick={(e) => togglePin(book, e)} className={`flex-1 py-2 rounded-xl transition flex items-center justify-center border shadow-sm col-span-2 md:w-full ${book.isPinned ? 'bg-wood-500 text-white border-wood-600' : 'bg-white text-stone-500 border-stone-200'}`} title={book.isPinned ? "取消釘選" : "優先釘選"}>
                                                 {book.isPinned ? <PinOff size={16} /> : <Pin size={16} />}
                                             </button>
