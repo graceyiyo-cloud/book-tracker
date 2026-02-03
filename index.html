@@ -66,6 +66,14 @@
             animation: fadeIn 0.3s ease-out forwards;
         }
         
+        @keyframes fadeInSimple {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .animate-fade-in {
+            animation: fadeInSimple 0.3s ease-out forwards;
+        }
+
         @keyframes modalIn {
             from { opacity: 0; transform: scale(0.95); }
             to { opacity: 1; transform: scale(1); }
@@ -149,6 +157,7 @@
             "異能", "空間", "甜寵", "虐戀", "爽文", "升級流", "治癒", "輕鬆", "沙雕"
         ];
 
+        // 將 CategoryPicker 內部圖示組件明確化
         const CategoryPicker = ({ selectedCategories, onToggle, allCategories, onAddNew, onDelete }) => {
             const [isOpen, setIsOpen] = useState(false);
             const [filterText, setFilterText] = useState('');
@@ -181,7 +190,6 @@
                 }
             };
 
-            // 優化：處理刪除邏輯，不透過全域 Modal
             const handleQuickDelete = (cat, e) => {
                 e.stopPropagation();
                 if (window.confirm(`確定要將「${cat}」從分類清單中永久刪除嗎？`)) {
