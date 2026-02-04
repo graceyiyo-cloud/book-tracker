@@ -32,8 +32,10 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
         .soft-shadow { box-shadow: 0 4px 12px -2px rgba(58, 90, 64, 0.08); }
-        input, textarea, select { font-size: 0.95rem !important; font-weight: 400; }
+        input, textarea, select { font-size: 0.95rem !important; font-weight: 400; font-style: normal !important; }
         .font-title { font-weight: 700; }
+        /* 強制移除斜體 */
+        em, i, .italic { font-style: normal !important; }
     </style>
 </head>
 <body class="bg-paper text-ink selection:bg-wood-200 selection:text-ink">
@@ -72,7 +74,7 @@
         const db = getFirestore(app);
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'my-reading-app';
         const ESTIMATE_WORDS_PER_PAGE = 350;
-        const DEFAULT_CATEGORIES = ["玄幻", "奇幻", "武俠", "仙俠", "都市", "言情", "古代", "架空", "科幻", "懸疑", "推理", "耽美", "百合", "穿越", "重生", "系統", "末世", "種田"];
+        const DEFAULT_CATEGORIES = ["玄幻", "奇幻", "武俠", "仙俠", "都市", "言情", "古代", "架空", "科幻", "懸疑", "推理", "驚悚", "耽美", "百合", "穿越", "重生", "系統", "末世", "種田"];
 
         const StarRating = ({ rating, setRating, interactive = false, size = 16 }) => (
             <div className="flex gap-1">
@@ -110,7 +112,7 @@
             };
             return (
                 <div className="w-full">
-                    <div className="flex flex-wrap gap-2 items-center p-1 border-b border-stone-200">
+                    <div className="flex flex-wrap gap-2 items-center p-1 border-b border-stone-200 font-normal">
                         {selectedCategories.map(cat => (
                             <span key={cat} className="bg-wood-400 text-white text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1">
                                 {cat} <X size={10} className="cursor-pointer" onClick={() => onToggle(cat)}/>
@@ -303,19 +305,19 @@
                     <section className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                             <div className="bg-white p-4 rounded-2xl border border-stone-100 flex justify-between items-center overflow-hidden soft-shadow">
-                                <div><p className="text-xs text-sub mb-1">正在閱讀</p><p className="text-2xl text-ink">{stats.reading}</p></div>
+                                <div><p className="text-xs text-sub mb-1">未讀</p><p className="text-2xl text-ink font-normal">{stats.reading}</p></div>
                                 <Hourglass className="text-wood-100 -mr-4" size={48} />
                             </div>
                             <div className="bg-sage-50 p-4 rounded-2xl border border-sage-100 flex justify-between items-center overflow-hidden soft-shadow">
-                                <div><p className="text-xs text-wood-500 mb-1">累計完食</p><p className="text-2xl text-ink">{stats.finished}</p></div>
+                                <div><p className="text-xs text-wood-500 mb-1">累計完食</p><p className="text-2xl text-ink font-normal">{stats.finished}</p></div>
                                 <Trophy className="text-wood-200 -mr-4" size={48} />
                             </div>
                         </div>
                         <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1 px-1 flex-nowrap">
                             {stats.sortedYears.map(y => (
-                                <div key={y} className="bg-white p-3 rounded-xl border border-stone-100 flex flex-col items-center min-w-[120px] shrink-0 soft-shadow">
+                                <div key={y} className="bg-white/60 p-3 rounded-xl border border-stone-100 flex flex-col items-center min-w-[120px] shrink-0 soft-shadow">
                                     <span className="text-xs text-wood-400 mb-2 font-title">{y} 年度</span>
-                                    <div className="flex gap-4 w-full justify-center items-center text-center">
+                                    <div className="flex gap-4 w-full justify-center items-center text-center font-normal">
                                         <div><div className="text-sage-500 text-lg">{stats.years[y].f}</div><div className="text-[9px] text-sub">完食</div></div>
                                         <div className="h-4 w-[1px] bg-stone-200"></div>
                                         <div><div className="text-dried-500 text-lg">{stats.years[y].d}</div><div className="text-[9px] text-sub">棄書</div></div>
@@ -326,117 +328,117 @@
                     </section>
 
                     <section className="bg-white rounded-3xl border border-stone-200 overflow-hidden soft-shadow transition-all">
-                        <div onClick={() => setIsAddFormOpen(!isAddFormOpen)} className="p-5 flex justify-between cursor-pointer hover:bg-stone-50 transition-colors">
-                            <div className="flex items-center gap-2 text-ink font-title"><PenTool className="text-wood-400" size={18} /> 紀錄新發現</div>
+                        <div onClick={() => setIsAddFormOpen(!isAddFormOpen)} className="p-5 flex justify-between cursor-pointer hover:bg-stone-50 transition-colors font-normal">
+                            <div className="flex items-center gap-2 text-ink font-title"><PenTool className="text-wood-400" size={18} /> 紀錄新書</div>
                             {isAddFormOpen ? <ChevronUp className="text-stone-400"/> : <Plus className="text-wood-400"/>}
                         </div>
                         {isAddFormOpen && (
-                            <form onSubmit={addBook} className="p-6 pt-0 space-y-4 border-t border-stone-50 pt-5 animate-fade-in">
+                            <form onSubmit={addBook} className="p-6 pt-0 space-y-4 border-t border-stone-50 pt-5 animate-fade-in font-normal">
                                 <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                                     <div className="md:col-span-5"><label className="text-[10px] text-stone-400 uppercase tracking-tighter">書名</label><input placeholder="書名" value={newBook.title} onChange={e=>setNewBook({...newBook, title:e.target.value})} className="w-full p-2 bg-transparent border-b border-stone-200 outline-none focus:border-wood-300 font-title" required /></div>
                                     <div className="md:col-span-4"><label className="text-[10px] text-stone-400 uppercase tracking-tighter">作者</label><input placeholder="作者" value={newBook.author} onChange={e=>setNewBook({...newBook, author:e.target.value})} className="w-full p-2 bg-transparent border-b border-stone-200 outline-none focus:border-wood-300" /></div>
-                                    <div className="md:col-span-3 flex items-end"><button type="button" onClick={()=>searchBookInfo(newBook, setNewBook)} disabled={isSearching || !newBook.title} className="w-full h-10 bg-stone-100 hover:bg-stone-200 text-wood-500 rounded-lg text-sm flex items-center justify-center gap-2 transition disabled:opacity-50">{isSearching ? <RefreshCw className="animate-spin" size={16}/> : <Search size={16}/>} 搜尋</button></div>
-                                    <div className="md:col-span-12"><label className="text-[10px] text-stone-400 uppercase tracking-tighter">分類標籤</label><CategoryPicker selectedCategories={newBook.category} allCategories={categories} onToggle={c => setNewBook(p => ({...p, category: p.category.includes(c) ? p.category.filter(x=>x!==c) : [...p.category, c]}))} onAddNew={c => handleUpdateCategories([...categories, c])} onDelete={c => handleUpdateCategories(categories.filter(x => x !== c))} /></div>
+                                    <div className="md:col-span-3 flex items-end"><button type="button" onClick={()=>searchBookInfo(newBook, setNewBook)} disabled={isSearching || !newBook.title} className="w-full h-10 bg-stone-100 hover:bg-stone-200 text-wood-500 rounded-lg text-sm flex items-center justify-center gap-2 transition disabled:opacity-50 font-normal">{isSearching ? <RefreshCw className="animate-spin" size={16}/> : <Search size={16}/>} 搜尋</button></div>
+                                    <div className="md:col-span-12"><label className="text-[10px] text-stone-400 uppercase tracking-tighter font-normal">分類標籤</label><CategoryPicker selectedCategories={newBook.category} allCategories={categories} onToggle={c => setNewBook(p => ({...p, category: p.category.includes(c) ? p.category.filter(x=>x!==c) : [...p.category, c]}))} onAddNew={c => handleUpdateCategories([...categories, c])} onDelete={c => handleUpdateCategories(categories.filter(x => x !== c))} /></div>
                                     <div className="md:col-span-4"><label className="text-[10px] text-stone-400 uppercase tracking-tighter">字數/頁數</label><input type="number" placeholder="字數/頁數" value={newBook.wordCount} onChange={e=>setNewBook({...newBook, wordCount:e.target.value, isWordCountManual:true})} className="w-full p-2 bg-transparent border-b border-stone-200 outline-none" /></div>
-                                    <div className="md:col-span-4"><label className="text-[10px] text-stone-400 uppercase tracking-tighter">加入日期</label><input type="date" value={newBook.addDate} onChange={e=>setNewBook({...newBook, addDate:e.target.value})} className="w-full p-2 bg-transparent border-b border-stone-200 text-sub outline-none" /></div>
+                                    <div className="md:col-span-4"><label className="text-[10px] text-stone-400 uppercase tracking-tighter font-normal">加入日期</label><input type="date" value={newBook.addDate} onChange={e=>setNewBook({...newBook, addDate:e.target.value})} className="w-full p-2 bg-transparent border-b border-stone-200 text-sub outline-none" /></div>
                                     <div className="md:col-span-4"><label className="text-[10px] text-stone-400 uppercase tracking-tighter">推薦連結</label><input placeholder="URL" value={newBook.reviewUrl} onChange={e=>setNewBook({...newBook, reviewUrl:e.target.value})} className="w-full p-2 bg-transparent border-b border-stone-200 outline-none" /></div>
-                                    <div className="md:col-span-12"><label className="text-[10px] text-stone-400 uppercase tracking-tighter">故事大綱</label><textarea placeholder="..." value={newBook.synopsis} onChange={e=>setNewBook({...newBook, synopsis:e.target.value})} className="w-full p-3 bg-stone-50 rounded-xl h-32 outline-none resize-none" /></div>
+                                    <div className="md:col-span-12"><label className="text-[10px] text-stone-400 uppercase tracking-tighter font-normal">故事大綱</label><textarea placeholder="..." value={newBook.synopsis} onChange={e=>setNewBook({...newBook, synopsis:e.target.value})} className="w-full p-3 bg-stone-50 rounded-xl h-32 outline-none resize-none font-normal" /></div>
                                 </div>
-                                <div className="flex justify-end gap-3 pt-2"><button type="submit" className="bg-wood-500 text-white px-8 py-2 rounded-xl shadow-lg hover:bg-wood-600 font-title transition-all">存入書櫃</button></div>
+                                <div className="flex justify-end gap-3 pt-2 font-normal"><button type="submit" className="bg-wood-500 text-white px-8 py-2 rounded-xl shadow-lg hover:bg-wood-600 font-title transition-all">存入書櫃</button></div>
                             </form>
                         )}
                     </section>
 
-                    <div className="space-y-3">
-                        <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="space-y-3 font-normal">
+                        <div className="flex flex-wrap items-center justify-between gap-3 font-normal">
                             <div className="flex gap-1.5 bg-white p-1 rounded-xl shadow-inner border border-stone-200">
                                 {['all', 'reading', 'finished', 'dropped'].map(f => (
-                                    <button key={f} onClick={() => setStatusFilter(f)} className={`px-4 py-1.5 rounded-lg text-xs transition-all ${statusFilter===f ? 'bg-wood-400 text-white shadow-sm' : 'text-stone-400'}`}>
-                                        {f==='all'?'全部':f==='reading'?'待讀':f==='finished'?'已完食':'棄書'}
+                                    <button key={f} onClick={() => setStatusFilter(f)} className={`px-4 py-1.5 rounded-lg text-xs transition-all ${statusFilter===f ? 'bg-wood-400 text-white shadow-sm font-normal' : 'text-stone-400 font-normal'}`}>
+                                        {f==='all'?'全部':f==='reading'?'未讀':f==='finished'?'已完食':'棄書'}
                                     </button>
                                 ))}
                             </div>
                             <div className="relative">
-                                <button onClick={() => setIsRatingMenuOpen(!isRatingMenuOpen)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs transition-all border ${ratingFilter > 0 ? 'bg-gold-400 text-white' : 'bg-white text-stone-500 border-stone-200'}`}>
+                                <button onClick={() => setIsRatingMenuOpen(!isRatingMenuOpen)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs transition-all border font-normal ${ratingFilter > 0 ? 'bg-gold-400 text-white' : 'bg-white text-stone-500 border-stone-200'}`}>
                                     <Star size={14} className={ratingFilter > 0 ? 'fill-white' : ''} /> {ratingFilter === 0 ? '評分' : `${ratingFilter} 星+`}
                                 </button>
                                 {isRatingMenuOpen && (
                                     <div className="absolute left-0 top-full mt-2 w-32 bg-white rounded-xl shadow-xl border border-stone-100 z-40 overflow-hidden animate-fade-in">
                                         {[0, 4.5, 4, 3].map(val => (
-                                            <button key={val} onClick={() => { setRatingFilter(val); setIsRatingMenuOpen(false); }} className="w-full text-left px-4 py-2 text-xs hover:bg-stone-50 text-sub">{val === 0 ? '全部評分' : `${val} 星+`}</button>
+                                            <button key={val} onClick={() => { setRatingFilter(val); setIsRatingMenuOpen(false); }} className="w-full text-left px-4 py-2 text-xs hover:bg-stone-50 text-sub font-normal">{val === 0 ? '全部評分' : `${val} 星+`}</button>
                                         ))}
                                     </div>
                                 )}
                             </div>
                         </div>
-                        <div className="relative group"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-300"/><input placeholder="搜尋..." value={searchTerm} onChange={e=>setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-3 rounded-2xl bg-white border border-stone-200 outline-none text-sm soft-shadow focus:border-wood-300 transition-all" /></div>
+                        <div className="relative group"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-300"/><input placeholder="搜尋..." value={searchTerm} onChange={e=>setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-3 rounded-2xl bg-white border border-stone-200 outline-none text-sm soft-shadow focus:border-wood-300 transition-all font-normal" /></div>
                     </div>
 
                     <div className="grid gap-5">
-                        {loading ? <div className="text-center py-10 text-stone-400">讀取中...</div> : filteredBooks.map(book => (
-                            <div key={book.id} className="bg-white p-5 rounded-[2rem] border border-stone-200 shadow-sm flex flex-col md:flex-row gap-5 relative overflow-hidden group/card">
+                        {loading ? <div className="text-center py-10 text-stone-400 font-normal">讀取中...</div> : filteredBooks.map(book => (
+                            <div key={book.id} className="bg-white p-5 rounded-[2rem] border border-stone-200 shadow-sm flex flex-col md:flex-row gap-5 relative overflow-hidden group/card font-normal">
                                 <div className={`absolute left-0 top-0 bottom-0 w-1 ${book.status==='finished'?'bg-sage-500':book.status==='dropped'?'bg-dried-500':'bg-stone-200'}`}></div>
                                 <div className="flex-1 space-y-1.5">
                                     {editingId === book.id ? (
-                                        <div className="space-y-3 p-0.5 animate-fade-in">
+                                        <div className="space-y-3 p-0.5 animate-fade-in font-normal">
                                             <div className="grid grid-cols-2 gap-3">
-                                                <div className="space-y-0.5"><label className="text-[10px] text-stone-400 uppercase tracking-tighter">書名</label><input value={editForm.title} onChange={e=>setEditForm({...editForm, title:e.target.value})} className="w-full p-1.5 border-b outline-none focus:border-wood-400 bg-transparent font-title" /></div>
-                                                <div className="space-y-0.5"><label className="text-[10px] text-stone-400 uppercase tracking-tighter">作者</label><input value={editForm.author} onChange={e=>setEditForm({...editForm, author:e.target.value})} className="w-full p-1.5 border-b outline-none focus:border-wood-400 bg-transparent" /></div>
+                                                <div className="space-y-0.5"><label className="text-[10px] text-stone-400 uppercase tracking-tighter font-normal">書名</label><input value={editForm.title} onChange={e=>setEditForm({...editForm, title:e.target.value})} className="w-full p-1.5 border-b outline-none focus:border-wood-400 bg-transparent font-title" /></div>
+                                                <div className="space-y-0.5"><label className="text-[10px] text-stone-400 uppercase tracking-tighter font-normal">作者</label><input value={editForm.author} onChange={e=>setEditForm({...editForm, author:e.target.value})} className="w-full p-1.5 border-b outline-none focus:border-wood-400 bg-transparent" /></div>
                                             </div>
                                             <CategoryPicker selectedCategories={editForm.category || []} allCategories={categories} onToggle={c => setEditForm(p => ({...p, category: p.category.includes(c) ? p.category.filter(x=>x!==c) : [...p.category, c]}))} onAddNew={c => handleUpdateCategories([...categories, c])} onDelete={c => handleUpdateCategories(categories.filter(x => x !== c))} />
                                             <div className="grid grid-cols-2 gap-3">
-                                                <div className="space-y-0.5"><label className="text-[10px] text-stone-400 uppercase tracking-tighter">字數</label><input value={editForm.wordCount} onChange={e=>setEditForm({...editForm, wordCount:e.target.value})} className="w-full p-1.5 border-b outline-none bg-transparent" /></div>
-                                                <div className="space-y-0.5"><label className="text-[10px] text-stone-400 uppercase tracking-tighter">加入日期</label><input type="date" value={editForm.addDate} onChange={e=>setEditForm({...editForm, addDate:e.target.value})} className="w-full p-1.5 border-b outline-none bg-transparent" /></div>
+                                                <div className="space-y-0.5"><label className="text-[10px] text-stone-400 uppercase tracking-tighter font-normal">字數</label><input value={editForm.wordCount} onChange={e=>setEditForm({...editForm, wordCount:e.target.value})} className="w-full p-1.5 border-b outline-none bg-transparent" /></div>
+                                                <div className="space-y-0.5"><label className="text-[10px] text-stone-400 uppercase tracking-tighter font-normal">加入日期</label><input type="date" value={editForm.addDate} onChange={e=>setEditForm({...editForm, addDate:e.target.value})} className="w-full p-1.5 border-b outline-none bg-transparent" /></div>
                                             </div>
-                                            <div className="space-y-0.5"><label className="text-[10px] text-stone-400 uppercase tracking-tighter">故事大綱</label><textarea value={editForm.synopsis} onChange={e=>setEditForm({...editForm, synopsis:e.target.value})} className="w-full p-2 border rounded-lg h-40 text-xs bg-stone-50 outline-none resize-none" /></div>
-                                            <div className="flex justify-end gap-2"><button onClick={()=>setEditingId(null)} className="px-3 py-1 text-xs text-sub">取消</button><button onClick={()=>updateBook(book.id, editForm)} className="bg-wood-500 text-white px-5 py-1.5 rounded-lg text-xs font-title">儲存</button></div>
+                                            <div className="space-y-0.5 font-normal"><label className="text-[10px] text-stone-400 uppercase tracking-tighter font-normal">故事大綱</label><textarea value={editForm.synopsis} onChange={e=>setEditForm({...editForm, synopsis:e.target.value})} className="w-full p-2 border rounded-lg h-40 text-xs bg-stone-50 outline-none resize-none font-normal" /></div>
+                                            <div className="flex justify-end gap-2 font-normal"><button onClick={()=>setEditingId(null)} className="px-3 py-1 text-xs text-sub font-normal">取消</button><button onClick={()=>updateBook(book.id, editForm)} className="bg-wood-500 text-white px-5 py-1.5 rounded-lg text-xs font-title">儲存</button></div>
                                         </div>
                                     ) : (
                                         <>
-                                            <div className="flex flex-wrap gap-1.5 items-center">
-                                                {book.category?.map(c => <span key={c} onClick={() => setSearchTerm(c)} className="text-[10px] bg-stone-100 px-2 py-0.5 rounded-full text-stone-400 cursor-pointer hover:bg-wood-100 transition-colors">{c}</span>)}
-                                                {book.isPinned && <span className="bg-wood-50 p-1 rounded-md border border-wood-100"><Pin size={10} className="text-wood-500 fill-wood-500"/></span>}
+                                            <div className="flex flex-wrap gap-1.5 items-center font-normal">
+                                                {book.category?.map(c => <span key={c} onClick={() => setSearchTerm(c)} className="text-[10px] bg-stone-100 px-2 py-0.5 rounded-full text-stone-400 cursor-pointer hover:bg-wood-100 transition-colors font-normal">{c}</span>)}
+                                                {book.isPinned && <span className="bg-wood-50 p-1 rounded-md border border-wood-100 font-normal"><Pin size={10} className="text-wood-500 fill-wood-500"/></span>}
                                             </div>
                                             <h3 className="text-xl font-title text-ink leading-tight">{book.title}</h3>
-                                            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-sub opacity-70">
-                                                <span className="flex items-center gap-1"><User size={12}/> {book.author || '佚名'}</span>
-                                                <span className="flex items-center gap-1"><TrendingUp size={12}/> {book.wordCount ? `${Number(book.wordCount).toLocaleString()}字` : '未知'}</span>
-                                                <span className="flex items-center gap-1"><Calendar size={12}/> {book.addDate}</span>
+                                            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-sub opacity-70 font-normal">
+                                                <span className="flex items-center gap-1 font-normal"><User size={12}/> {book.author || '佚名'}</span>
+                                                <span className="flex items-center gap-1 font-normal"><TrendingUp size={12}/> {book.wordCount ? `${Number(book.wordCount).toLocaleString()}字` : '未知'}</span>
+                                                <span className="flex items-center gap-1 font-normal"><Calendar size={12}/> {book.addDate}</span>
                                             </div>
                                             {book.status === 'finished' && (
-                                                <div className="mt-2 bg-sage-50 p-3 rounded-xl border border-sage-100">
-                                                    <div className="flex justify-between items-center mb-1"><span className="text-[10px] text-sage-600 flex items-center gap-1 font-medium"><CheckCircle size={12}/> 完食於 {book.finishDate}</span>{book.rating > 0 && <StarRating rating={book.rating} />}</div>
-                                                    {book.review && <p className="text-xs text-sage-text italic">「{book.review}」</p>}
+                                                <div className="mt-2 bg-sage-50 p-3 rounded-xl border border-sage-100 font-normal">
+                                                    <div className="flex justify-between items-center mb-1 font-normal"><span className="text-[10px] text-sage-600 flex items-center gap-1 font-normal"><CheckCircle size={12}/> 完食於 {book.finishDate}</span>{book.rating > 0 && <StarRating rating={book.rating} />}</div>
+                                                    {book.review && <p className="text-xs text-sage-text font-normal">「{book.review}」</p>}
                                                 </div>
                                             )}
-                                            {book.status === 'dropped' && <div className="mt-2 bg-dried-50 p-3 rounded-xl border border-dried-100 text-xs text-dried-text"><p className="flex items-center gap-1 font-medium"><BookX size={12}/> 第 {book.dropChapter || '?'} 章棄書</p></div>}
-                                            {book.synopsis && <button onClick={()=>setExpandedBooks(p=>({...p,[book.id]:!p[book.id]}))} className="text-[10px] text-stone-400 flex items-center gap-1"><FileText size={12}/> 大綱</button>}
-                                            {expandedBooks[book.id] && <p className="text-xs text-sub bg-stone-50 p-2 rounded-lg mt-1 whitespace-pre-wrap">{book.synopsis}</p>}
+                                            {book.status === 'dropped' && <div className="mt-2 bg-dried-50 p-3 rounded-xl border border-dried-100 text-xs text-dried-text font-normal"><p className="flex items-center gap-1 font-normal"><BookX size={12}/> 第 {book.dropChapter || '?'} 章棄書</p></div>}
+                                            {book.synopsis && <button onClick={()=>setExpandedBooks(p=>({...p,[book.id]:!p[book.id]}))} className="text-[10px] text-stone-400 flex items-center gap-1 font-normal"><FileText size={12}/> 大綱</button>}
+                                            {expandedBooks[book.id] && <p className="text-xs text-sub bg-stone-50 p-2 rounded-lg mt-1 whitespace-pre-wrap font-normal">{book.synopsis}</p>}
                                         </>
                                     )}
                                 </div>
-                                <div className="flex flex-row md:flex-col gap-2 justify-end shrink-0 md:w-10">
+                                <div className="flex flex-row md:flex-col gap-2 justify-end shrink-0 md:w-10 font-normal">
                                     <button onClick={() => { setEditingId(book.id); setEditForm({...book}); }} className="h-10 w-10 flex items-center justify-center text-stone-300 hover:text-wood-500 bg-stone-50 rounded-xl" title="編輯"><Edit3 size={18}/></button>
                                     {book.status === 'reading' ? (
                                         <><button onClick={() => { setActiveBookId(book.id); setModalType('finish'); setModalData({ date: new Date().toISOString().split('T')[0], rating: 0 }); }} className="h-10 w-10 flex items-center justify-center text-sage-600 bg-sage-50 rounded-xl border border-sage-100" title="完食"><CheckCircle size={18}/></button><button onClick={() => { setActiveBookId(book.id); setModalType('drop'); setModalData({ date: new Date().toISOString().split('T')[0] }); }} className="h-10 w-10 flex items-center justify-center text-dried-500 bg-dried-50 rounded-xl border border-dried-100" title="棄書"><BookX size={18}/></button></>
-                                    ) : <button onClick={() => updateBook(book.id, { status:'reading', finishDate:null, dropChapter:null, dropDate:null, rating:null, review:null })} className="h-10 w-10 flex items-center justify-center text-stone-400 bg-stone-50 rounded-xl" title="重讀"><RotateCcw size={18}/></button>}
-                                    <button onClick={(e) => { e.stopPropagation(); updateBook(book.id, { isPinned: !book.isPinned }); }} className={`h-10 w-10 flex items-center justify-center rounded-xl border ${book.isPinned ? 'bg-wood-500 text-white border-wood-600' : 'bg-white text-stone-300 border-stone-100'}`}>{book.isPinned ? <PinOff size={16}/> : <Pin size={16}/>}</button>
-                                    <button onClick={() => { if(confirm('刪除？')) deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`, book.id)); }} className="h-10 w-10 flex items-center justify-center text-stone-200 hover:text-dried-500"><Trash2 size={16}/></button>
+                                    ) : <button onClick={() => updateBook(book.id, { status:'reading', finishDate:null, dropChapter:null, dropDate:null, rating:null, review:null })} className="h-10 w-10 flex items-center justify-center text-stone-400 bg-stone-50 rounded-xl font-normal" title="重讀"><RotateCcw size={18}/></button>}
+                                    <button onClick={(e) => { e.stopPropagation(); updateBook(book.id, { isPinned: !book.isPinned }); }} className={`h-10 w-10 flex items-center justify-center rounded-xl border ${book.isPinned ? 'bg-wood-500 text-white border-wood-600' : 'bg-white text-stone-300 border-stone-100'} font-normal`}>{book.isPinned ? <PinOff size={16}/> : <Pin size={16}/>}</button>
+                                    <button onClick={() => { if(confirm('刪除？')) deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`, book.id)); }} className="h-10 w-10 flex items-center justify-center text-stone-200 hover:text-dried-500 font-normal"><Trash2 size={16}/></button>
                                 </div>
                             </div>
                         ))}
                     </div>
 
                     {modalType && (
-                        <div className="fixed inset-0 z-50 bg-ink/20 backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-6 animate-fade-in" onClick={()=>setModalType(null)}>
-                            <div className="bg-paper w-full max-w-sm rounded-t-[2.5rem] md:rounded-[3rem] p-8 md:p-10 shadow-2xl space-y-6" onClick={e=>e.stopPropagation()}>
+                        <div className="fixed inset-0 z-50 bg-ink/20 backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-6 animate-fade-in font-normal" onClick={()=>setModalType(null)}>
+                            <div className="bg-paper w-full max-w-sm rounded-t-[2.5rem] md:rounded-[3rem] p-8 md:p-10 shadow-2xl space-y-6 font-normal" onClick={e=>e.stopPropagation()}>
                                 <h3 className="text-xl text-center text-ink font-title">{modalType==='finish'?'紀錄完食':'紀錄棄書'}</h3>
                                 {modalType==='finish' ? (
-                                    <div className="space-y-5"><div className="space-y-1"><label className="text-xs text-sub">完食日期</label><input type="date" value={modalData.date} onChange={e=>setModalData({...modalData, date:e.target.value})} className="w-full border p-2 text-center rounded-lg" /></div><div className="flex flex-col items-center gap-2 text-xs text-sub"><p>評分</p><StarRating rating={modalData.rating || 0} setRating={r => setModalData({...modalData, rating: r})} interactive={true} /></div><textarea placeholder="心得..." value={modalData.review} onChange={e=>setModalData({...modalData, review:e.target.value})} className="w-full p-3 border rounded-xl h-24 text-sm resize-none" /></div>
+                                    <div className="space-y-5 font-normal"><div className="space-y-1 font-normal"><label className="text-xs text-sub font-normal">完食日期</label><input type="date" value={modalData.date} onChange={e=>setModalData({...modalData, date:e.target.value})} className="w-full border p-2 text-center rounded-lg font-normal" /></div><div className="flex flex-col items-center gap-2 text-xs text-sub font-normal"><p className="font-normal">評分</p><StarRating rating={modalData.rating || 0} setRating={r => setModalData({...modalData, rating: r})} interactive={true} /></div><textarea placeholder="心得..." value={modalData.review} onChange={e=>setModalData({...modalData, review:e.target.value})} className="w-full p-3 border rounded-xl h-24 text-sm resize-none font-normal" /></div>
                                 ) : (
-                                    <div className="space-y-4"><div className="space-y-1"><label className="text-xs text-sub">棄書日期</label><input type="date" value={modalData.date} onChange={e=>setModalData({...modalData, date:e.target.value})} className="w-full border p-2 text-center rounded-lg" /></div><div className="space-y-1"><label className="text-xs text-sub">棄書進度</label><input placeholder="例：第 45 章..." value={modalData.chapter} onChange={e=>setModalData({...modalData, chapter:e.target.value})} className="w-full p-3 border rounded-xl text-center" /></div></div>
+                                    <div className="space-y-4 font-normal"><div className="space-y-1 font-normal"><label className="text-xs text-sub font-normal">棄書日期</label><input type="date" value={modalData.date} onChange={e=>setModalData({...modalData, date:e.target.value})} className="w-full border p-2 text-center rounded-lg font-normal" /></div><div className="space-y-1 font-normal"><label className="text-xs text-sub font-normal">棄書進度</label><input placeholder="例：第 45 章..." value={modalData.chapter} onChange={e=>setModalData({...modalData, chapter:e.target.value})} className="w-full p-3 border rounded-xl text-center font-normal" /></div></div>
                                 )}
-                                <div className="flex gap-4"><button onClick={()=>setModalType(null)} className="flex-1 text-stone-400">取消</button><button onClick={handleStatusUpdate} className="flex-1 py-3 bg-wood-500 text-white rounded-xl shadow-lg font-title">確認</button></div>
+                                <div className="flex gap-4 font-normal"><button onClick={()=>setModalType(null)} className="flex-1 text-stone-400 font-normal">取消</button><button onClick={handleStatusUpdate} className="flex-1 py-3 bg-wood-500 text-white rounded-xl shadow-lg font-title">確認</button></div>
                             </div>
                         </div>
                     )}
