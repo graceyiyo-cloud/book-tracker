@@ -42,7 +42,7 @@
     <div id="root"></div>
 
     <script type="text/babel" data-type="module">
-        import React, { useState, useEffect, useMemo } from 'https://esm.sh/react@18.2.0';
+        import React, { useState, useEffect, useMemo, useRef } from 'https://esm.sh/react@18.2.0';
         import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
         import { 
             BookOpen, Search, Plus, Trash2, CheckCircle, BookX, Calendar, User, 
@@ -163,6 +163,8 @@
             const [editForm, setEditForm] = useState({});
             const [expandedBooks, setExpandedBooks] = useState({});
             const [newBook, setNewBook] = useState({ title: '', author: '', wordCount: '', isWordCountManual: false, addDate: new Date().toISOString().split('T')[0], reviewUrl: '', synopsis: '', category: [], isPinned: false });
+            
+            const searchInputRef = useRef(null);
 
             useEffect(() => {
                 const initAuth = async () => {
@@ -191,33 +193,21 @@
                     });
                     setCategories(fetchedCats);
                     
-                    // 優化後的極限排序邏輯
                     const sorted = list.sort((a, b) => {
-                        // 1. 置頂優先 (Pinned at the very top)
                         if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
-                        
-                        // 2. 定義各狀態的關鍵排序日期
                         const getSortTime = (item) => {
                             let dateStr = "";
                             if (item.status === 'finished') dateStr = item.finishDate;
                             else if (item.status === 'dropped') dateStr = item.dropDate;
                             else dateStr = item.addDate;
-                            
-                            // 轉為 Date 物件比對數值，無日期者排最後
                             const d = new Date(dateStr);
                             return isNaN(d.getTime()) ? 0 : d.getTime();
                         };
-
                         const timeA = getSortTime(a);
                         const timeB = getSortTime(b);
-
-                        // 3. 由新到舊 (大到小)
                         if (timeA !== timeB) return timeB - timeA;
-                        
-                        // 4. 同日期則依系統建立時間排序
                         return (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
                     });
-
                     setBooks(sorted);
                     setLoading(false);
                 });
@@ -277,13 +267,11 @@
                     const matchStatus = statusFilter === 'all' || b.status === statusFilter;
                     const matchRating = ratingFilter === 0 || (b.rating || 0) >= ratingFilter;
                     const matchTerm = b.title.toLowerCase().includes(term) || b.author?.toLowerCase().includes(term) || b.category?.some(c => c.toLowerCase().includes(term));
-                    
                     let matchYear = true;
                     if (yearFilter) {
                         const bDate = b.status === 'finished' ? b.finishDate : (b.status === 'dropped' ? b.dropDate : null);
                         matchYear = bDate && bDate.startsWith(yearFilter);
                     }
-                    
                     return matchStatus && matchRating && matchTerm && matchYear;
                 });
             }, [books, statusFilter, ratingFilter, searchTerm, yearFilter]);
@@ -316,6 +304,35 @@
                     setIsAddFormOpen(false);
                     showToast("新增成功！");
                 } catch (err) { showToast("儲存失敗", "error"); }
+            };
+
+            const openExternalSearch = (query) => {
+                if (!query) return;
+                window.open(`https://www.google.com/search?q=${encodeURIComponent(query)}`, '_blank');
+            };
+
+            const renderReviewLink = (url) => {
+                if (!url) return null;
+                const isHttp = url.startsWith('http://') || url.startsWith('https://');
+                return (
+                    <div className="mt-1 flex items-center gap-1.5 text-[10px]">
+                        <LinkIcon size={10} className="text-wood-400" />
+                        {isHttp ? (
+                            <a href={url} target="_blank" rel="noopener noreferrer" className="text-wood-500 hover:underline flex items-center gap-0.5">
+                                推薦連結 <ExternalLink size={10}/>
+                            </a>
+                        ) : (
+                            <span className="text-sub italic opacity-80">{url}</span>
+                        )}
+                    </div>
+                );
+            };
+
+            const clearSearch = () => {
+                setSearchTerm('');
+                if (searchInputRef.current) {
+                    searchInputRef.current.focus();
+                }
             };
 
             if (!isLoggedIn) {
@@ -387,7 +404,7 @@
                                     <div className="md:col-span-12"><label className="text-[10px] text-stone-400 uppercase tracking-tighter font-normal">分類標籤</label><CategoryPicker selectedCategories={newBook.category} allCategories={categories} onToggle={c => setNewBook(p => ({...p, category: p.category.includes(c) ? p.category.filter(x=>x!==c) : [...p.category, c]}))} onAddNew={c => handleUpdateCategories([...categories, c])} onDelete={c => handleUpdateCategories(categories.filter(x => x !== c))} /></div>
                                     <div className="md:col-span-4"><label className="text-[10px] text-stone-400 uppercase tracking-tighter">字數/頁數</label><input type="number" placeholder="字數/頁數" value={newBook.wordCount} onChange={e=>setNewBook({...newBook, wordCount:e.target.value, isWordCountManual:true})} className="w-full p-2 bg-transparent border-b border-stone-200 outline-none" /></div>
                                     <div className="md:col-span-4"><label className="text-[10px] text-stone-400 uppercase tracking-tighter font-normal">加入日期</label><input type="date" value={newBook.addDate} onChange={e=>setNewBook({...newBook, addDate:e.target.value})} className="w-full p-2 bg-transparent border-b border-stone-200 text-sub outline-none" /></div>
-                                    <div className="md:col-span-4"><label className="text-[10px] text-stone-400 uppercase tracking-tighter">推薦連結</label><input placeholder="URL" value={newBook.reviewUrl} onChange={e=>setNewBook({...newBook, reviewUrl:e.target.value})} className="w-full p-2 bg-transparent border-b border-stone-200 outline-none" /></div>
+                                    <div className="md:col-span-4"><label className="text-[10px] text-stone-400 uppercase tracking-tighter">推薦連結/備註</label><input placeholder="URL 或 文字" value={newBook.reviewUrl} onChange={e=>setNewBook({...newBook, reviewUrl:e.target.value})} className="w-full p-2 bg-transparent border-b border-stone-200 outline-none" /></div>
                                     <div className="md:col-span-12"><label className="text-[10px] text-stone-400 uppercase tracking-tighter font-normal">故事大綱</label><textarea placeholder="..." value={newBook.synopsis} onChange={e=>setNewBook({...newBook, synopsis:e.target.value})} className="w-full p-3 bg-stone-50 rounded-xl h-32 outline-none resize-none font-normal" /></div>
                                 </div>
                                 <div className="flex justify-end gap-3 pt-2 font-normal"><button type="submit" className="bg-wood-500 text-white px-8 py-2 rounded-xl shadow-lg hover:bg-wood-600 font-title transition-all">存入書櫃</button></div>
@@ -417,7 +434,24 @@
                                 )}
                             </div>
                         </div>
-                        <div className="relative group"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-300"/><input placeholder="搜尋..." value={searchTerm} onChange={e=>setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-3 rounded-2xl bg-white border border-stone-200 outline-none text-sm soft-shadow focus:border-wood-300 transition-all font-normal" /></div>
+                        <div className="relative group">
+                            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-300"/>
+                            <input 
+                                ref={searchInputRef}
+                                placeholder="搜尋..." 
+                                value={searchTerm} 
+                                onChange={e=>setSearchTerm(e.target.value)} 
+                                className="w-full pl-10 pr-10 py-3 rounded-2xl bg-white border border-stone-200 outline-none text-sm soft-shadow focus:border-wood-300 transition-all font-normal" 
+                            />
+                            {searchTerm && (
+                                <button 
+                                    onClick={clearSearch}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-300 hover:text-stone-500 transition-colors"
+                                >
+                                    <X size={16} />
+                                </button>
+                            )}
+                        </div>
                     </div>
 
                     <div className="grid gap-5">
@@ -436,6 +470,7 @@
                                                 <div className="space-y-0.5"><label className="text-[10px] text-stone-400 uppercase tracking-tighter font-normal">字數</label><input value={editForm.wordCount} onChange={e=>setEditForm({...editForm, wordCount:e.target.value})} className="w-full p-1.5 border-b outline-none bg-transparent" /></div>
                                                 <div className="space-y-0.5"><label className="text-[10px] text-stone-400 uppercase tracking-tighter font-normal">加入日期</label><input type="date" value={editForm.addDate} onChange={e=>setEditForm({...editForm, addDate:e.target.value})} className="w-full p-1.5 border-b outline-none bg-transparent" /></div>
                                             </div>
+                                            <div className="space-y-0.5"><label className="text-[10px] text-stone-400 uppercase tracking-tighter font-normal">推薦連結/備註</label><input value={editForm.reviewUrl || ''} onChange={e=>setEditForm({...editForm, reviewUrl:e.target.value})} className="w-full p-1.5 border-b outline-none bg-transparent" /></div>
                                             <div className="space-y-0.5 font-normal"><label className="text-[10px] text-stone-400 uppercase tracking-tighter font-normal">故事大綱</label><textarea value={editForm.synopsis} onChange={e=>setEditForm({...editForm, synopsis:e.target.value})} className="w-full p-2 border rounded-lg h-40 text-xs bg-stone-50 outline-none resize-none font-normal" /></div>
                                             <div className="flex justify-end gap-2 font-normal"><button onClick={()=>setEditingId(null)} className="px-3 py-1 text-xs text-sub font-normal">取消</button><button onClick={()=>updateBook(book.id, editForm)} className="bg-wood-500 text-white px-5 py-1.5 rounded-lg text-xs font-title">儲存</button></div>
                                         </div>
@@ -445,13 +480,17 @@
                                                 {book.category?.map(c => <span key={c} onClick={() => setSearchTerm(c)} className="text-[10px] bg-stone-100 px-2 py-0.5 rounded-full text-stone-400 cursor-pointer hover:bg-wood-100 transition-colors font-normal">{c}</span>)}
                                                 {book.isPinned && <span className="bg-wood-50 p-1 rounded-md border border-wood-100 font-normal"><Pin size={10} className="text-wood-500 fill-wood-500"/></span>}
                                             </div>
-                                            <h3 className="text-xl font-title text-ink leading-tight">{book.title}</h3>
+                                            <h3 className="text-xl font-title text-ink leading-tight cursor-pointer hover:text-wood-400 transition-colors flex items-center gap-2" onClick={() => openExternalSearch(book.title)}>
+                                                {book.title} <ExternalLink size={14} className="opacity-30"/>
+                                            </h3>
                                             <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-sub opacity-70 font-normal">
-                                                <span className="flex items-center gap-1 font-normal"><User size={12}/> {book.author || '佚名'}</span>
+                                                <span className="flex items-center gap-1 font-normal cursor-pointer hover:text-wood-400" onClick={() => openExternalSearch(book.author || '佚名')}><User size={12}/> {book.author || '佚名'}</span>
                                                 <span className="flex items-center gap-1 font-normal"><TrendingUp size={12}/> {book.wordCount ? `${Number(book.wordCount).toLocaleString()}字` : '未知'}</span>
                                                 <span className="flex items-center gap-1 font-normal"><Calendar size={12}/> {book.addDate}</span>
                                             </div>
                                             
+                                            {renderReviewLink(book.reviewUrl)}
+
                                             {book.status === 'finished' && (
                                                 <div className="mt-2 bg-sage-50 p-3 rounded-xl border border-sage-100 font-normal">
                                                     <div className="flex justify-between items-center mb-1 font-normal"><span className="text-[10px] text-sage-600 flex items-center gap-1 font-normal"><CheckCircle size={12}/> 完食於 {book.finishDate}</span>{book.rating > 0 && <StarRating rating={book.rating} />}</div>
@@ -487,7 +526,7 @@
                                                 </div>
                                             )}
 
-                                            {book.synopsis && <button onClick={()=>setExpandedBooks(p=>({...p,[book.id]:!p[book.id]}))} className="text-[10px] text-stone-400 flex items-center gap-1 font-normal"><FileText size={12}/> 大綱</button>}
+                                            {book.synopsis && <button onClick={()=>setExpandedBooks(p=>({...p,[book.id]:!p[book.id]}))} className="text-[10px] text-stone-400 flex items-center gap-1 font-normal mt-1"><FileText size={12}/> 大綱</button>}
                                             {expandedBooks[book.id] && <p className="text-xs text-sub bg-stone-50 p-2 rounded-lg mt-1 whitespace-pre-wrap font-normal">{book.synopsis}</p>}
                                         </>
                                     )}
