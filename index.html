@@ -176,15 +176,19 @@
                 initAuth();
                 const unsubscribe = onAuthStateChanged(auth, (curr) => {
                     setUser(curr);
-                    // 只有在真的登入成功且有 customId 時才確保 isLoggedIn 為 true
-                    if (curr && customId) setIsLoggedIn(true);
+                    // 修改處：只有當 localStorage 裡本來就有 ID 時才自動登入，避免輸入時被劫持
+                    const storedId = localStorage.getItem('reading_tracker_id');
+                    if (curr && storedId) {
+                        setCustomId(storedId);
+                        setIsLoggedIn(true);
+                    }
                 });
                 return () => unsubscribe();
-            }, [customId]);
+            }, []);
 
             useEffect(() => {
                 if (!user || !isLoggedIn || !customId) { 
-                    if (!customId) setLoading(false); 
+                    if (!isLoggedIn) setLoading(false); 
                     return; 
                 }
                 const collectionRef = collection(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`);
