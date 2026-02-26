@@ -233,18 +233,11 @@
                 if (!target.title) return;
                 setIsSearching(true);
                 try {
-                    // 修改：組合書名與作者進行搜尋
-                    const query = `intitle:${target.title}${target.author ? `+inauthor:${target.author}` : ''}`;
-                    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=1`);
+                    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=intitle:${target.title}${target.author ? `+inauthor:${target.author}` : ''}&maxResults=1`);
                     const data = await res.json();
                     if (data.items?.length > 0) {
                         const info = data.items[0].volumeInfo;
-                        setter(prev => ({ 
-                            ...prev, 
-                            author: prev.author || info.authors?.[0] || '', 
-                            wordCount: (info.pageCount || 0) * ESTIMATE_WORDS_PER_PAGE, 
-                            synopsis: info.description || '' 
-                        }));
+                        setter(prev => ({ ...prev, author: prev.author || info.authors?.[0] || '', wordCount: (info.pageCount || 0) * ESTIMATE_WORDS_PER_PAGE, synopsis: info.description || '' }));
                         showToast("找到資料！");
                     } else showToast("無搜尋結果", "error");
                 } catch (err) { showToast("搜尋失敗", "error"); } finally { setIsSearching(false); }
@@ -320,8 +313,10 @@
                 } catch (err) { showToast("儲存失敗", "error"); }
             };
 
-            const openExternalSearch = (query) => {
-                if (!query) return;
+            // 修改：外部搜尋自動帶入 書名 + 作者
+            const openExternalSearch = (title, author) => {
+                if (!title) return;
+                const query = author ? `${title} ${author}` : title;
                 window.open(`https://www.google.com/search?q=${encodeURIComponent(query)}`, '_blank');
             };
 
@@ -494,7 +489,7 @@
                                                 {book.category?.map(c => <span key={c} onClick={() => setSearchTerm(c)} className="text-[10px] bg-stone-100 px-2 py-0.5 rounded-full text-stone-400 cursor-pointer hover:bg-wood-100 transition-colors font-normal">{c}</span>)}
                                                 {book.isPinned && <span className="bg-wood-50 p-1 rounded-md border border-wood-100 font-normal"><Pin size={10} className="text-wood-500 fill-wood-500"/></span>}
                                             </div>
-                                            <h3 className="text-xl font-title text-ink leading-tight cursor-pointer hover:text-wood-400 transition-colors flex items-center gap-2" onClick={() => openExternalSearch(book.title)}>
+                                            <h3 className="text-xl font-title text-ink leading-tight cursor-pointer hover:text-wood-400 transition-colors flex items-center gap-2" onClick={() => openExternalSearch(book.title, book.author)}>
                                                 {book.title} <ExternalLink size={14} className="opacity-30"/>
                                             </h3>
                                             <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-sub opacity-70 font-normal">
