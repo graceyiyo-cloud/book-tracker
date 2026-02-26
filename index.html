@@ -176,7 +176,6 @@
                 initAuth();
                 const unsubscribe = onAuthStateChanged(auth, (curr) => {
                     setUser(curr);
-                    // 修改處：只有當 localStorage 裡本來就有 ID 時才自動登入，避免輸入時被劫持
                     const storedId = localStorage.getItem('reading_tracker_id');
                     if (curr && storedId) {
                         setCustomId(storedId);
@@ -234,11 +233,18 @@
                 if (!target.title) return;
                 setIsSearching(true);
                 try {
-                    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=intitle:${target.title}${target.author ? `+inauthor:${target.author}` : ''}&maxResults=1`);
+                    // 修改：組合書名與作者進行搜尋
+                    const query = `intitle:${target.title}${target.author ? `+inauthor:${target.author}` : ''}`;
+                    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=1`);
                     const data = await res.json();
                     if (data.items?.length > 0) {
                         const info = data.items[0].volumeInfo;
-                        setter(prev => ({ ...prev, author: prev.author || info.authors?.[0] || '', wordCount: (info.pageCount || 0) * ESTIMATE_WORDS_PER_PAGE, synopsis: info.description || '' }));
+                        setter(prev => ({ 
+                            ...prev, 
+                            author: prev.author || info.authors?.[0] || '', 
+                            wordCount: (info.pageCount || 0) * ESTIMATE_WORDS_PER_PAGE, 
+                            synopsis: info.description || '' 
+                        }));
                         showToast("找到資料！");
                     } else showToast("無搜尋結果", "error");
                 } catch (err) { showToast("搜尋失敗", "error"); } finally { setIsSearching(false); }
