@@ -337,10 +337,18 @@
                 } catch (err) { showToast("儲存失敗", "error"); }
             };
 
+            // 改良外部搜尋邏輯，使用動態建立 a 標籤來確保在手機瀏覽器中也能順利開啟新分頁
             const openExternalSearch = (title, author) => {
                 if (!title) return;
                 const query = author ? `${title} ${author}` : title;
-                window.open(`https://www.google.com/search?q=${encodeURIComponent(query)}`, '_blank');
+                const url = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+                const a = document.createElement('a');
+                a.href = url;
+                a.target = '_blank';
+                a.rel = 'noopener noreferrer';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
             };
 
             const renderReviewLink = (url) => {
