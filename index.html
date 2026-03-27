@@ -139,6 +139,23 @@
             );
         };
 
+        // 輔助函式：辨識文字中的 URL 並轉為超連結
+        const linkifyText = (text) => {
+            if (!text) return null;
+            const urlRegex = /(https?:\/\/[^\s]+)/g;
+            const parts = text.split(urlRegex);
+            return parts.map((part, i) => {
+                if (part.match(urlRegex)) {
+                    return (
+                        <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="text-wood-500 hover:underline break-all">
+                            {part}
+                        </a>
+                    );
+                }
+                return part;
+            });
+        };
+
         function App() {
             const [user, setUser] = useState(null);
             const [books, setBooks] = useState([]);
@@ -201,8 +218,6 @@
                     setCategories(fetchedCats);
                     
                     const sorted = list.sort((a, b) => {
-                        // 【修復置頂 Bug】：舊書預設沒有 isPinned (為 undefined)，新書有 (為 false)，
-                        // 所以必須強制轉成布林值 (!!) 再比較，否則會發生 undefined !== false 導致舊書排到前面的嚴重問題
                         const pinA = !!a.isPinned;
                         const pinB = !!b.isPinned;
                         if (pinA !== pinB) return pinA ? -1 : 1;
@@ -211,17 +226,12 @@
                             let dateVal = item.addDate;
                             if (item.status === 'finished') dateVal = item.finishDate || item.addDate;
                             else if (item.status === 'dropped') dateVal = item.dropDate || item.addDate;
-                            
-                            // 確保 dateVal 存在且為字串型態，否則回傳最小值 0
                             if (!dateVal || typeof dateVal !== 'string') return 0;
-                            
-                            // 萃取所有連續的數字陣列 (例如 "2026/02/03" 會抓出 ["2026", "02", "03"])
                             const match = dateVal.match(/(\d+)/g);
                             if (match && match.length > 0) {
                                 const y = parseInt(match[0], 10) || 0;
                                 const m = match.length > 1 ? parseInt(match[1], 10) : 0;
                                 const d = match.length > 2 ? parseInt(match[2], 10) : 0;
-                                // 將年月日轉換為一個可直接比大小的純數字，例如 20260203
                                 return y * 10000 + m * 100 + d;
                             }
                             return 0;
@@ -229,13 +239,7 @@
                         
                         const valA = getSortValue(a);
                         const valB = getSortValue(b);
-                        
-                        // 比較純數字，降序排列（數字越大代表日期越新，排在越上面）
-                        if (valA !== valB) {
-                            return valB - valA; 
-                        }
-                        
-                        // 如果日期一模一樣（例如都是同一天加入或完食的），則回退比較 Firebase 的系統建立時間
+                        if (valA !== valB) return valB - valA; 
                         return (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
                     });
                     
@@ -337,7 +341,6 @@
                 } catch (err) { showToast("儲存失敗", "error"); }
             };
 
-            // 改良外部搜尋邏輯，使用動態建立 a 標籤來確保在手機瀏覽器中也能順利開啟新分頁
             const openExternalSearch = (title, author) => {
                 if (!title) return;
                 const query = author ? `${title} ${author}` : title;
@@ -353,17 +356,12 @@
 
             const renderReviewLink = (url) => {
                 if (!url) return null;
-                const isHttp = url.startsWith('http://') || url.startsWith('https://');
                 return (
-                    <div className="mt-1 flex items-center gap-1.5 text-[10px]">
-                        <LinkIcon size={10} className="text-wood-400" />
-                        {isHttp ? (
-                            <a href={url} target="_blank" rel="noopener noreferrer" className="text-wood-500 hover:underline">
-                                推薦連結
-                            </a>
-                        ) : (
-                            <span className="text-sub italic opacity-80">{url}</span>
-                        )}
+                    <div className="mt-1 flex items-start gap-1.5 text-[10px] whitespace-pre-wrap">
+                        <LinkIcon size={10} className="text-wood-400 mt-0.5 shrink-0" />
+                        <div className="text-sub opacity-80 flex-1 font-normal">
+                            {linkifyText(url)}
+                        </div>
                     </div>
                 );
             };
@@ -444,7 +442,7 @@
                                     <div className="md:col-span-12"><label className="text-[10px] text-stone-400 uppercase tracking-tighter font-normal">分類標籤</label><CategoryPicker selectedCategories={newBook.category} allCategories={categories} onToggle={c => setNewBook(p => ({...p, category: p.category.includes(c) ? p.category.filter(x=>x!==c) : [...p.category, c]}))} onAddNew={c => handleUpdateCategories([...categories, c])} onDelete={c => handleUpdateCategories(categories.filter(x => x !== c))} /></div>
                                     <div className="md:col-span-4"><label className="text-[10px] text-stone-400 uppercase tracking-tighter">字數/頁數</label><input type="number" placeholder="字數/頁數" value={newBook.wordCount} onChange={e=>setNewBook({...newBook, wordCount:e.target.value, isWordCountManual:true})} className="w-full p-2 bg-transparent border-b border-stone-200 outline-none" /></div>
                                     <div className="md:col-span-4"><label className="text-[10px] text-stone-400 uppercase tracking-tighter font-normal">加入日期</label><input type="date" value={newBook.addDate} onChange={e=>setNewBook({...newBook, addDate:e.target.value})} className="w-full p-2 bg-transparent border-b border-stone-200 text-sub outline-none" /></div>
-                                    <div className="md:col-span-4"><label className="text-[10px] text-stone-400 uppercase tracking-tighter">推薦連結/備註</label><input placeholder="URL 或 文字" value={newBook.reviewUrl} onChange={e=>setNewBook({...newBook, reviewUrl:e.target.value})} className="w-full p-2 bg-transparent border-b border-stone-200 outline-none" /></div>
+                                    <div className="md:col-span-4"><label className="text-[10px] text-stone-400 uppercase tracking-tighter">推薦連結/備註</label><textarea placeholder="URL 或 文字" value={newBook.reviewUrl} onChange={e=>setNewBook({...newBook, reviewUrl:e.target.value})} className="w-full p-2 bg-transparent border-b border-stone-200 outline-none resize-none overflow-hidden min-h-[40px]" onInput={(e) => {e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px';}} /></div>
                                     <div className="md:col-span-12"><label className="text-[10px] text-stone-400 uppercase tracking-tighter font-normal">故事大綱</label><textarea placeholder="..." value={newBook.synopsis} onChange={e=>setNewBook({...newBook, synopsis:e.target.value})} className="w-full p-3 bg-stone-50 rounded-xl h-32 outline-none resize-none font-normal" /></div>
                                 </div>
                                 <div className="flex justify-end gap-3 pt-2 font-normal"><button type="submit" className="bg-wood-500 text-white px-8 py-2 rounded-xl shadow-lg hover:bg-wood-600 font-title transition-all">存入書櫃</button></div>
@@ -524,7 +522,7 @@
                                                     />
                                                 </div>
                                             </div>
-                                            <div className="space-y-0.5"><label className="text-[10px] text-stone-400 uppercase tracking-tighter font-normal">推薦連結/備註</label><input value={editForm.reviewUrl || ''} onChange={e=>setEditForm({...editForm, reviewUrl:e.target.value})} className="w-full p-1.5 border-b outline-none bg-transparent" /></div>
+                                            <div className="space-y-0.5"><label className="text-[10px] text-stone-400 uppercase tracking-tighter font-normal">推薦連結/備註</label><textarea value={editForm.reviewUrl || ''} onChange={e=>setEditForm({...editForm, reviewUrl:e.target.value})} className="w-full p-1.5 border-b outline-none bg-transparent resize-none min-h-[40px]" onInput={(e) => {e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px';}} /></div>
                                             {book.status === 'dropped' && (
                                                 <div className="space-y-0.5"><label className="text-[10px] text-stone-400 uppercase tracking-tighter font-normal">棄書理由</label><input value={editForm.dropReason || ''} onChange={e=>setEditForm({...editForm, dropReason:e.target.value})} className="w-full p-1.5 border-b outline-none bg-transparent" /></div>
                                             )}
@@ -601,7 +599,7 @@
                                             )}
 
                                             {book.synopsis && <button onClick={()=>setExpandedBooks(p=>({...p,[book.id]:!p[book.id]}))} className="text-[10px] text-stone-400 flex items-center gap-1 font-normal mt-1"><FileText size={12}/> 大綱</button>}
-                                            {expandedBooks[book.id] && <p className="text-xs text-sub bg-stone-50 p-2 rounded-lg mt-1 whitespace-pre-wrap font-normal">{book.synopsis}</p>}
+                                            {expandedBooks[book.id] && <p className="text-xs text-sub bg-stone-50 p-2 rounded-lg mt-1 whitespace-pre-wrap font-normal">{linkifyText(book.synopsis)}</p>}
                                         </>
                                     )}
                                 </div>
