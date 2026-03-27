@@ -48,11 +48,11 @@
             BookOpen, Search, Plus, Trash2, BookCheck, BookX, Calendar, User, 
             LogIn, RefreshCw, TrendingUp, Link as LinkIcon, FileText, PenTool, 
             Trophy, Hourglass, Star, X, RotateCcw, AlertTriangle, LogOut, Edit3, 
-            ChevronDown, ExternalLink, Pin, PinOff, ChevronUp 
+            ChevronDown, ExternalLink, Pin, PinOff, ChevronUp, Lock 
         } from 'https://esm.sh/lucide-react@0.344.0';
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
-        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+        import { getFirestore, collection, addDoc, onSnapshot, doc, getDoc, updateDoc, deleteDoc, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 
         let firebaseConfig;
         try {
@@ -139,7 +139,6 @@
             );
         };
 
-        // 輔助函式：辨識文字中的 URL 並轉為超連結
         const linkifyText = (text) => {
             if (!text) return null;
             const urlRegex = /(https?:\/\/[^\s]+)/g;
@@ -162,6 +161,7 @@
             const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
             const [loading, setLoading] = useState(true);
             const [customId, setCustomId] = useState(localStorage.getItem('reading_tracker_id') || '');
+            const [loginPassword, setLoginPassword] = useState(localStorage.getItem('reading_tracker_pw') || '');
             const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('reading_tracker_id'));
             const [toast, setToast] = useState(null);
             const [searchTerm, setSearchTerm] = useState('');
@@ -172,8 +172,6 @@
             const [isSearching, setIsSearching] = useState(false);
             const [isRatingMenuOpen, setIsRatingMenuOpen] = useState(false);
             const [modalType, setModalType] = useState(null);
-            const [modalData, setModalData] = useState({});
-            const [activeBookId, setActiveBookId] = useState(null);
             const [editingId, setEditingId] = useState(null);
             const [inlineActionId, setInlineActionId] = useState(null);
             const [inlineData, setInlineData] = useState({});
@@ -193,11 +191,6 @@
                 initAuth();
                 const unsubscribe = onAuthStateChanged(auth, (curr) => {
                     setUser(curr);
-                    const storedId = localStorage.getItem('reading_tracker_id');
-                    if (curr && storedId) {
-                        setCustomId(storedId);
-                        setIsLoggedIn(true);
-                    }
                 });
                 return () => unsubscribe();
             }, []);
@@ -245,16 +238,51 @@
                     
                     setBooks(sorted);
                     setLoading(false);
+                }, (error) => {
+                    console.error("Snapshot error:", error);
+                    // 若權限不足可能代表 ID/密碼存取錯誤
                 });
                 return () => unsub();
             }, [user, isLoggedIn, customId]);
 
             const showToast = (message, type = 'info') => { setToast({ message, type }); setTimeout(() => setToast(null), 3000); };
-            const handleLogin = (e) => {
+            
+            const handleLogin = async (e) => {
                 e.preventDefault();
-                if (customId.trim().length < 3) return showToast("ID 過短", "error");
-                localStorage.setItem('reading_tracker_id', customId);
-                setIsLoggedIn(true);
+                const id = customId.trim();
+                const pw = loginPassword.trim();
+
+                if (id.length < 3) return showToast("ID 過短", "error");
+                if (pw.length === 0) return showToast("請輸入密碼", "error");
+
+                setIsSearching(true);
+                try {
+                    // 檢查密碼文檔
+                    const settingsRef = doc(db, 'artifacts', appId, 'public', 'data', `reading_list_${id}`, 'settings');
+                    const settingsSnap = await getDoc(settingsRef);
+
+                    if (settingsSnap.exists() && settingsSnap.data().password) {
+                        // 如果有密碼，驗證是否一致
+                        if (settingsSnap.data().password !== pw) {
+                            showToast("密碼錯誤", "error");
+                            setIsSearching(false);
+                            return;
+                        }
+                    } else {
+                        // 如果沒有設定過密碼，則此次輸入即為密碼
+                        await setDoc(settingsRef, { password: pw }, { merge: true });
+                        showToast("已為此 ID 設定新密碼");
+                    }
+
+                    localStorage.setItem('reading_tracker_id', id);
+                    localStorage.setItem('reading_tracker_pw', pw);
+                    setIsLoggedIn(true);
+                } catch (err) {
+                    console.error(err);
+                    showToast("驗證失敗", "error");
+                } finally {
+                    setIsSearching(false);
+                }
             };
 
             const searchBookInfo = async (target, setter) => {
@@ -379,10 +407,16 @@
                         <div className="bg-white p-10 rounded-[2.5rem] shadow-xl w-full max-w-md text-center border border-stone-200">
                             <BookOpen size={64} className="mx-auto text-wood-300 mb-6" />
                             <h1 className="text-4xl font-title mb-2 tracking-widest text-ink">雲端書櫃</h1>
-                            <p className="text-sub mb-8">請輸入 ID 開啟你的閱讀空間</p>
+                            <p className="text-sub mb-8">輸入 ID 與密碼開啟閱讀空間</p>
                             <form onSubmit={handleLogin} className="space-y-4">
-                                <input value={customId} onChange={e => setCustomId(e.target.value)} placeholder="你的專屬 ID" className="w-full p-4 rounded-2xl border text-center text-lg outline-none focus:ring-2 focus:ring-wood-200 transition-all" />
-                                <button className="w-full bg-wood-500 text-white py-4 rounded-2xl font-title shadow-lg hover:bg-wood-600 transition-all">進入書房</button>
+                                <div className="space-y-2">
+                                    <input value={customId} onChange={e => setCustomId(e.target.value)} placeholder="你的專屬 ID" className="w-full p-4 rounded-2xl border text-center text-lg outline-none focus:ring-2 focus:ring-wood-200 transition-all" />
+                                    <input type="password" value={loginPassword} onChange={e => setLoginPassword(e.target.value)} placeholder="登入密碼" className="w-full p-4 rounded-2xl border text-center text-lg outline-none focus:ring-2 focus:ring-wood-200 transition-all" />
+                                </div>
+                                <button type="submit" disabled={isSearching} className="w-full bg-wood-500 text-white py-4 rounded-2xl font-title shadow-lg hover:bg-wood-600 transition-all flex items-center justify-center gap-2">
+                                    {isSearching ? <RefreshCw className="animate-spin" /> : '進入書房'}
+                                </button>
+                                <p className="text-[10px] text-stone-400 mt-4">首次使用 ID 時，輸入的密碼將自動設為存取密碼</p>
                             </form>
                         </div>
                     </div>
@@ -396,8 +430,8 @@
                     <header className="flex justify-between items-center py-4 border-b border-stone-200">
                         <div className="flex items-center gap-2 text-xl tracking-widest text-ink font-title"><BookOpen className="text-wood-400"/> 閱讀手帳</div>
                         <div className="flex items-center gap-4 text-xs text-sub">
-                            <span>ID: {customId}</span>
-                            <button onClick={() => { setIsLoggedIn(false); localStorage.removeItem('reading_tracker_id'); setCustomId(''); }}><LogOut size={18}/></button>
+                            <span className="flex items-center gap-1"><User size={14}/> {customId}</span>
+                            <button onClick={() => { setIsLoggedIn(false); localStorage.removeItem('reading_tracker_id'); localStorage.removeItem('reading_tracker_pw'); setCustomId(''); setLoginPassword(''); }}><LogOut size={18}/></button>
                         </div>
                     </header>
 
