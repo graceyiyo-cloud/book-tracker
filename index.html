@@ -652,7 +652,7 @@
                                                     {modalType === 'finish' ? (
                                                         <div className="space-y-3">
                                                             <div className="grid grid-cols-2 gap-2">
-                                                                <div className="space-y-1"><label className="text-[10px] text-sub">日期</label><input type="date" value={inlineData.date} onChange={e=>setInlineData({...inlineData, date:e.target.value})} className="w-full p-1.5 text-xs border rounded-lg" /></div>
+                                                                <div className="space-y-1"><label className="text-[10px] text-sub">日期</label><input type="date" value={inlineData.date} onChange={e=>setInlineData({...inlineData, date:e.target.value})} className="w-full pl-1.5 pr-0 py-1 text-[10px] tracking-tighter border rounded-lg h-8" /></div>
                                                                 <div className="flex flex-col items-center justify-end pb-1"><StarRating rating={inlineData.rating || 0} setRating={r => setInlineData({...inlineData, rating: r})} interactive={true} size={14} /></div>
                                                             </div>
                                                             <textarea placeholder="寫下你的心得...(支援換行)" value={inlineData.review} onChange={e=>setInlineData({...inlineData, review:e.target.value})} className="w-full p-2 text-xs border rounded-lg h-24 resize-none" />
@@ -660,8 +660,8 @@
                                                     ) : (
                                                         <div className="space-y-3">
                                                             <div className="grid grid-cols-2 gap-2">
-                                                                <div className="space-y-1"><label className="text-[10px] text-sub">日期</label><input type="date" value={inlineData.date} onChange={e=>setInlineData({...inlineData, date:e.target.value})} className="w-full p-1.5 text-xs border rounded-lg" /></div>
-                                                                <div className="space-y-1"><label className="text-[10px] text-sub">進度(章節)</label><input placeholder="例：45" value={inlineData.chapter} onChange={e=>setInlineData({...inlineData, chapter:e.target.value})} className="w-full p-1.5 text-xs border rounded-lg" /></div>
+                                                                <div className="space-y-1"><label className="text-[10px] text-sub">日期</label><input type="date" value={inlineData.date} onChange={e=>setInlineData({...inlineData, date:e.target.value})} className="w-full pl-1.5 pr-0 py-1 text-[10px] tracking-tighter border rounded-lg h-8" /></div>
+                                                                <div className="space-y-1"><label className="text-[10px] text-sub">進度(章節)</label><input placeholder="例：45" value={inlineData.chapter} onChange={e=>setInlineData({...inlineData, chapter:e.target.value})} className="w-full p-1.5 text-xs border rounded-lg h-8" /></div>
                                                             </div>
                                                             <div className="space-y-1"><label className="text-[10px] text-sub">為什麼不想看了？</label><textarea placeholder="選填：棄書原因" value={inlineData.dropReason} onChange={e=>setInlineData({...inlineData, dropReason:e.target.value})} className="w-full p-2 text-xs border rounded-lg h-16 resize-none" /></div>
                                                         </div>
