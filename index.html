@@ -115,7 +115,16 @@
                 if (e.key === 'Enter') {
                     e.preventDefault();
                     const tags = filterText.trim().split(/[，,\s]+/).filter(t => t !== "");
-                    for (const tag of tags) { if (!selectedCategories.includes(tag)) { if (allCategories.includes(tag)) onToggle(tag); else await onAddNew(tag); } }
+                    for (const tag of tags) { 
+                        if (!selectedCategories.includes(tag)) { 
+                            if (allCategories.includes(tag)) {
+                                onToggle(tag); 
+                            } else {
+                                await onAddNew(tag); 
+                                onToggle(tag); // 新增分類後同步自動勾選
+                            }
+                        } 
+                    }
                     setFilterText('');
                 }
             };
