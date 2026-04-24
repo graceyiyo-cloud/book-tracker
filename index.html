@@ -4,6 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>我的雲端書櫃</title>
+
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="雲端書櫃">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#3a5a40">
+
+    <link rel="apple-touch-icon" href="./icon.png">
+    
+    <link rel="manifest" href='data:application/manifest+json,{"name":"我的雲端書櫃","short_name":"雲端書櫃","start_url":".","display":"standalone","background_color":"#f2f0e9","theme_color":"#3a5a40","icons":[{"src":"./icon.png","sizes":"512x512","type":"image/png"}]}'>
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
@@ -452,7 +463,7 @@
             if (!isLoggedIn) {
                 return (
                     <div className="min-h-screen flex items-center justify-center p-6 bg-paper animate-fade-in">
-                        <div className="bg-white p-10 rounded-[2.5rem] shadow-xl w-full max-w-md text-center border border-stone-200">
+                        <div className="bg-white p-10 rounded-[2.5rem] shadow-xl w-full max-md text-center border border-stone-200">
                             <BookOpen size={64} className="mx-auto text-wood-300 mb-6" />
                             <h1 className="text-4xl font-title mb-2 tracking-widest text-ink">雲端書櫃</h1>
                             <p className="text-sub mb-8 text-sm">輸入 ID 與密碼開啟閱讀空間</p>
