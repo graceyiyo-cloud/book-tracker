@@ -208,7 +208,7 @@
             const [inlineData, setInlineData] = useState({});
             const [editForm, setEditForm] = useState({});
             const [expandedBooks, setExpandedBooks] = useState({});
-            const [newBook, setNewBook] = useState({ title: '', author: '', wordCount: '', isWordCountManual: false, addDate: new Date().toISOString().split('T')[0], reviewUrl: '', synopsis: '', category: [], isPinned: false });
+            const [newBook, setNewBook] = useState({ title: '', author: '', wordCount: '', isWordCountManual: false, addDate: new Date().toISOString().split('T')[0], reviewUrl: '', synopsis: '', category: [], isPinned: false, isReadingNow: false });
             
             const searchInputRef = useRef(null);
 
@@ -266,6 +266,10 @@
                     setCategories(fetchedCats);
                     
                     const sorted = list.sort((a, b) => {
+                        const readingNowA = !!a.isReadingNow;
+                        const readingNowB = !!b.isReadingNow;
+                        if (readingNowA !== readingNowB) return readingNowA ? -1 : 1;
+
                         const pinA = !!a.isPinned;
                         const pinB = !!b.isPinned;
                         if (pinA !== pinB) return pinA ? -1 : 1;
@@ -418,9 +422,9 @@
             const handleInlineSubmit = async (id, type) => {
                 let updates = {};
                 if (type === 'finish') {
-                    updates = { status: 'finished', finishDate: inlineData.date, rating: inlineData.rating || 0, review: inlineData.review || '', isPinned: false };
+                    updates = { status: 'finished', finishDate: inlineData.date, rating: inlineData.rating || 0, review: inlineData.review || '', isPinned: false, isReadingNow: false };
                 } else if (type === 'drop') {
-                    updates = { status: 'dropped', dropChapter: inlineData.chapter, dropDate: inlineData.date, dropReason: inlineData.dropReason || '', isPinned: false };
+                    updates = { status: 'dropped', dropChapter: inlineData.chapter, dropDate: inlineData.date, dropReason: inlineData.dropReason || '', isPinned: false, isReadingNow: false };
                 }
                 await updateBook(id, updates);
             };
@@ -431,7 +435,7 @@
                 try {
                     const collectionRef = collection(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`);
                     await addDoc(collectionRef, { ...newBook, status: 'reading', createdAt: serverTimestamp() });
-                    setNewBook({ title: '', author: '', wordCount: '', isWordCountManual: false, addDate: new Date().toISOString().split('T')[0], reviewUrl: '', synopsis: '', category: [], isPinned: false });
+                    setNewBook({ title: '', author: '', wordCount: '', isWordCountManual: false, addDate: new Date().toISOString().split('T')[0], reviewUrl: '', synopsis: '', category: [], isPinned: false, isReadingNow: false });
                     setIsAddFormOpen(false);
                     showToast("新增成功！");
                 } catch (err) { showToast("儲存失敗", "error"); }
@@ -691,6 +695,7 @@
                                     ) : (
                                         <>
                                             <div className="flex flex-wrap gap-1.5 items-center font-normal">
+                                                {book.isReadingNow && <span className="text-[10px] bg-sage-50 text-sage-600 px-2 py-0.5 rounded-full border border-sage-200 flex items-center gap-1 font-normal"><BookOpen size={10} className="fill-sage-100"/> 正在閱讀</span>}
                                                 {book.category?.map(c => <span key={c} onClick={() => setSearchTerm(c)} className="text-[10px] bg-stone-100 px-2 py-0.5 rounded-full text-stone-400 cursor-pointer hover:bg-wood-100 transition-colors font-normal">{c}</span>)}
                                                 {book.isPinned && <span className="bg-wood-50 p-1 rounded-md border border-wood-100 font-normal"><Pin size={10} className="text-wood-500 fill-wood-500"/></span>}
                                             </div>
@@ -766,12 +771,13 @@
                                     <button onClick={() => { setEditingId(book.id); setEditForm({...book}); }} className="h-9 w-9 md:h-10 md:w-10 flex items-center justify-center text-stone-300 hover:text-wood-500 bg-stone-50 rounded-xl" title="編輯基本資料"><Edit3 size={18}/></button>
                                     {book.status === 'reading' ? (
                                         <>
+                                            <button onClick={(e) => { e.stopPropagation(); updateBook(book.id, { isReadingNow: !book.isReadingNow }); }} className={`h-9 w-9 md:h-10 md:w-10 flex items-center justify-center rounded-xl border ${book.isReadingNow ? 'bg-sage-500 text-white border-sage-600' : 'bg-white text-stone-300 border-stone-100'} font-normal`} title="標記正在閱讀"><BookOpen size={16}/></button>
                                             <button onClick={() => { setInlineActionId(book.id); setModalType('finish'); setInlineData({ date: new Date().toISOString().split('T')[0], rating: 0, review: '' }); }} className="h-9 w-9 md:h-10 md:w-10 flex items-center justify-center text-sage-600 bg-sage-50 rounded-xl border border-sage-100" title="完食"><BookCheck size={18}/></button>
                                             <button onClick={() => { setInlineActionId(book.id); setModalType('drop'); setInlineData({ date: new Date().toISOString().split('T')[0], chapter: '', dropReason: '' }); }} className="h-9 w-9 md:h-10 md:w-10 flex items-center justify-center text-dried-500 bg-dried-50 rounded-xl border border-dried-100" title="棄書"><BookX size={18}/></button>
                                         </>
-                                    ) : <button onClick={() => updateBook(book.id, { status:'reading', finishDate:null, dropChapter:null, dropDate:null, rating:null, review:null, dropReason:null })} className="h-9 w-9 md:h-10 md:w-10 flex items-center justify-center text-stone-400 bg-stone-50 rounded-xl font-normal" title="恢復閱讀狀態/重讀"><RotateCcw size={18}/></button>}
-                                    <button onClick={(e) => { e.stopPropagation(); updateBook(book.id, { isPinned: !book.isPinned }); }} className={`h-9 w-9 md:h-10 md:w-10 flex items-center justify-center rounded-xl border ${book.isPinned ? 'bg-wood-500 text-white border-wood-600' : 'bg-white text-stone-300 border-stone-100'} font-normal`}>{book.isPinned ? <PinOff size={16}/> : <Pin size={16}/>}</button>
-                                    <button onClick={() => { if(confirm('刪除？')) deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`, book.id)); }} className="h-9 w-9 md:h-10 md:w-10 flex items-center justify-center text-stone-200 hover:text-dried-500 font-normal"><Trash2 size={16}/></button>
+                                    ) : <button onClick={() => updateBook(book.id, { status:'reading', finishDate:null, dropChapter:null, dropDate:null, rating:null, review:null, dropReason:null, isReadingNow: false })} className="h-9 w-9 md:h-10 md:w-10 flex items-center justify-center text-stone-400 bg-stone-50 rounded-xl font-normal" title="恢復閱讀狀態/重讀"><RotateCcw size={18}/></button>}
+                                    <button onClick={(e) => { e.stopPropagation(); updateBook(book.id, { isPinned: !book.isPinned }); }} className={`h-9 w-9 md:h-10 md:w-10 flex items-center justify-center rounded-xl border ${book.isPinned ? 'bg-wood-500 text-white border-wood-600' : 'bg-white text-stone-300 border-stone-100'} font-normal`} title="置頂">{book.isPinned ? <PinOff size={16}/> : <Pin size={16}/>}</button>
+                                    <button onClick={() => { if(confirm('刪除？')) deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`, book.id)); }} className="h-9 w-9 md:h-10 md:w-10 flex items-center justify-center text-stone-200 hover:text-dried-500 font-normal" title="刪除"><Trash2 size={16}/></button>
                                 </div>
                             </div>
                         ))}
