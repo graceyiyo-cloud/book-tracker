@@ -197,9 +197,11 @@
             const [statusFilter, setStatusFilter] = useState('all');
             const [yearFilter, setYearFilter] = useState(null);
             const [ratingFilter, setRatingFilter] = useState(0);
+            const [wordCountFilter, setWordCountFilter] = useState('all');
             const [isAddFormOpen, setIsAddFormOpen] = useState(false);
             const [isSearching, setIsSearching] = useState(false);
             const [isRatingMenuOpen, setIsRatingMenuOpen] = useState(false);
+            const [isWordCountMenuOpen, setIsWordCountMenuOpen] = useState(false);
             const [modalType, setModalType] = useState(null);
             const [editingId, setEditingId] = useState(null);
             const [inlineActionId, setInlineActionId] = useState(null);
@@ -391,9 +393,19 @@
                         const bDate = b.status === 'finished' ? b.finishDate : (b.status === 'dropped' ? b.dropDate : null);
                         matchYear = bDate && bDate.startsWith(yearFilter);
                     }
-                    return matchStatus && matchRating && matchTerms && matchYear;
+
+                    let matchWordCount = true;
+                    if (wordCountFilter !== 'all') {
+                        const wc = Number(b.wordCount) || 0;
+                        if (wordCountFilter === 'under30') matchWordCount = wc < 300000;
+                        else if (wordCountFilter === '30to50') matchWordCount = wc >= 300000 && wc < 500000;
+                        else if (wordCountFilter === '50to100') matchWordCount = wc >= 500000 && wc < 1000000;
+                        else if (wordCountFilter === 'over100') matchWordCount = wc >= 1000000;
+                    }
+
+                    return matchStatus && matchRating && matchTerms && matchYear && matchWordCount;
                 });
-            }, [books, statusFilter, ratingFilter, searchTerm, yearFilter]);
+            }, [books, statusFilter, ratingFilter, searchTerm, yearFilter, wordCountFilter]);
 
             const updateBook = async (id, data) => {
                 const bookRef = doc(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`, id);
@@ -462,7 +474,7 @@
                     showToast("目前清單沒有可複製的內容", "error");
                     return;
                 }
-                const textToCopy = filteredBooks.map(b => `${b.title}-${b.author || '佚名'}`).join('\n');
+                const textToCopy = filteredBooks.map(b => `《${b.title}》${b.author || '佚名'}`).join('\n');
                 navigator.clipboard.writeText(textToCopy).then(() => {
                     showToast("清單文字已複製！");
                 }).catch(() => {
@@ -573,17 +585,38 @@
                                     </button>
                                 ))}
                             </div>
-                            <div className="relative">
-                                <button onClick={() => setIsRatingMenuOpen(!isRatingMenuOpen)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs transition-all border font-normal ${ratingFilter > 0 ? 'bg-gold-400 text-white' : 'bg-white text-stone-500 border-stone-200'}`}>
-                                    <Star size={14} className={ratingFilter > 0 ? 'fill-white' : ''} /> {ratingFilter === 0 ? '評分' : `${ratingFilter} 星+`}
-                                </button>
-                                {isRatingMenuOpen && (
-                                    <div className="absolute left-0 top-full mt-2 w-32 bg-white rounded-xl shadow-xl border border-stone-100 z-40 overflow-hidden animate-fade-in">
-                                        {[0, 4.5, 4, 3].map(val => (
-                                            <button key={val} onClick={() => { setRatingFilter(val); setIsRatingMenuOpen(false); }} className="w-full text-left px-4 py-2 text-xs hover:bg-stone-50 text-sub font-normal">{val === 0 ? '全部評分' : `${val} 星+`}</button>
-                                        ))}
-                                    </div>
-                                )}
+                            <div className="flex gap-2">
+                                <div className="relative">
+                                    <button onClick={() => setIsRatingMenuOpen(!isRatingMenuOpen)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs transition-all border font-normal ${ratingFilter > 0 ? 'bg-gold-400 text-white border-gold-400' : 'bg-white text-stone-500 border-stone-200'}`}>
+                                        <Star size={14} className={ratingFilter > 0 ? 'fill-white text-white' : ''} /> {ratingFilter === 0 ? '評分' : `${ratingFilter} 星+`}
+                                    </button>
+                                    {isRatingMenuOpen && (
+                                        <div className="absolute left-0 top-full mt-2 w-32 bg-white rounded-xl shadow-xl border border-stone-100 z-40 overflow-hidden animate-fade-in">
+                                            {[0, 4.5, 4, 3].map(val => (
+                                                <button key={val} onClick={() => { setRatingFilter(val); setIsRatingMenuOpen(false); }} className="w-full text-left px-4 py-2 text-xs hover:bg-stone-50 text-sub font-normal">{val === 0 ? '全部評分' : `${val} 星+`}</button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="relative">
+                                    <button onClick={() => setIsWordCountMenuOpen(!isWordCountMenuOpen)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs transition-all border font-normal ${wordCountFilter !== 'all' ? 'bg-wood-400 text-white border-wood-400' : 'bg-white text-stone-500 border-stone-200'}`}>
+                                        <TrendingUp size={14} className={wordCountFilter !== 'all' ? 'text-white' : ''} /> 
+                                        {wordCountFilter === 'all' ? '字數' : wordCountFilter === 'under30' ? '30萬內' : wordCountFilter === '30to50' ? '30-50萬' : wordCountFilter === '50to100' ? '50-100萬' : '100萬+'}
+                                    </button>
+                                    {isWordCountMenuOpen && (
+                                        <div className="absolute right-0 md:left-0 md:right-auto top-full mt-2 w-32 bg-white rounded-xl shadow-xl border border-stone-100 z-40 overflow-hidden animate-fade-in">
+                                            {[
+                                                { val: 'all', label: '全部字數' },
+                                                { val: 'under30', label: '30萬字內' },
+                                                { val: '30to50', label: '30-50萬字' },
+                                                { val: '50to100', label: '50-100萬字' },
+                                                { val: 'over100', label: '100萬字以上' }
+                                            ].map(opt => (
+                                                <button key={opt.val} onClick={() => { setWordCountFilter(opt.val); setIsWordCountMenuOpen(false); }} className="w-full text-left px-4 py-2 text-xs hover:bg-stone-50 text-sub font-normal">{opt.label}</button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
 
@@ -617,7 +650,7 @@
                         </div>
                     </div>
 
-                    <div className="grid gap-3 md:gap-4">
+                    <div className="grid gap-2 md:gap-3">
                         {books.length === 0 && !loading && <div className="text-center py-20 text-stone-300 text-sm tracking-widest font-normal">書櫃空空的，開始記錄第一本書吧</div>}
                         {filteredBooks.map(book => (
                             <div key={book.id} className="bg-white p-3.5 md:p-5 rounded-[1.5rem] md:rounded-[2rem] border border-stone-200 shadow-sm flex flex-col md:flex-row gap-3 md:gap-5 relative overflow-hidden group/card font-normal mx-0.5 md:mx-0">
