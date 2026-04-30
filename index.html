@@ -520,10 +520,10 @@
             }
 
             return (
-                <div className="min-h-screen max-w-3xl mx-auto px-2 py-3 md:p-6 space-y-4 pb-20 bg-paper animate-fade-in">
+                <div className="min-h-screen max-w-full mx-auto px-2 py-1 md:px-2 md:py-2 space-y-4 pb-20 bg-paper animate-fade-in">
                     {toast && <div className={`fixed top-8 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-full shadow-2xl animate-fade-in text-white flex items-center gap-2 ${toast.type === 'error' ? 'bg-dried-500' : 'bg-wood-500'}`}>{toast.message}</div>}
                     
-                    <header className="flex justify-between items-center pt-1 pb-1 border-b border-stone-200 px-2 md:px-0">
+                    <header className="flex justify-between items-center pt-1 pb-1 border-b border-stone-200 px-1">
                         <div className="flex items-center gap-2 text-xl tracking-widest text-ink font-title"><BookOpen className="text-wood-400"/> 閱讀手帳</div>
                         <div className="flex items-center gap-4 text-xs text-sub">
                             <span className="flex items-center gap-1 font-medium"><User size={14}/> {customId}</span>
@@ -531,7 +531,7 @@
                         </div>
                     </header>
 
-                    <section className="space-y-2.5 px-1 md:px-0">
+                    <section className="space-y-2.5 px-0">
                         <div className="grid grid-cols-2 gap-3">
                             <div className="bg-white p-4 rounded-2xl border border-stone-100 flex justify-between items-center overflow-hidden soft-shadow">
                                 <div><p className="text-xs text-sub mb-1">未讀</p><p className="text-2xl text-ink font-normal">{stats.reading}</p></div>
@@ -542,7 +542,7 @@
                                 <Trophy className="text-wood-200 -mr-4" size={48} />
                             </div>
                         </div>
-                        <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1 px-1 flex-nowrap">
+                        <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1 px-0 flex-nowrap">
                             {stats.sortedYears.map(y => (
                                 <div key={y} 
                                      onClick={() => setYearFilter(yearFilter === y ? null : y)}
@@ -558,88 +558,108 @@
                         </div>
                     </section>
 
-                    <section className="bg-white rounded-3xl border border-stone-200 overflow-hidden soft-shadow transition-all mx-1 md:mx-0">
-                        <div onClick={() => setIsAddFormOpen(!isAddFormOpen)} className="p-4 flex justify-between cursor-pointer hover:bg-stone-50 transition-colors font-normal">
+                    <section className="bg-white rounded-3xl border border-stone-200 overflow-hidden soft-shadow transition-all mx-0">
+                        <div onClick={() => setIsAddFormOpen(!isAddFormOpen)} className="py-2.5 px-4 flex justify-between cursor-pointer hover:bg-stone-50 transition-colors font-normal">
                             <div className="flex items-center gap-2 text-ink font-title"><PenTool className="text-wood-400" size={18} /> 紀錄新書</div>
                             {isAddFormOpen ? <ChevronUp className="text-stone-400"/> : <Plus className="text-wood-400"/>}
                         </div>
                         {isAddFormOpen && (
-                            <form onSubmit={addBook} className="p-5 pt-0 space-y-4 border-t border-stone-50 pt-5 animate-fade-in font-normal">
-                                <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-                                    <div className="md:col-span-5"><label className="text-[10px] text-stone-400 uppercase tracking-tighter">書名</label><input placeholder="書名" value={newBook.title} onChange={e=>setNewBook({...newBook, title:e.target.value})} className="w-full p-2 bg-transparent border-b border-stone-200 outline-none focus:border-wood-300 font-title" required /></div>
-                                    <div className="md:col-span-4"><label className="text-[10px] text-stone-400 uppercase tracking-tighter">作者</label><input placeholder="作者" value={newBook.author} onChange={e=>setNewBook({...newBook, author:e.target.value})} className="w-full p-2 bg-transparent border-b border-stone-200 outline-none focus:border-wood-300" /></div>
-                                    <div className="md:col-span-3 flex items-end"><button type="button" onClick={()=>searchBookInfo(newBook, setNewBook)} disabled={isSearching || !newBook.title} className="w-full h-10 bg-stone-100 hover:bg-stone-200 text-wood-500 rounded-lg text-sm flex items-center justify-center gap-2 transition disabled:opacity-50 font-normal">{isSearching ? <RefreshCw className="animate-spin" size={16}/> : <Search size={16}/>} 搜尋</button></div>
-                                    <div className="md:col-span-12"><label className="text-[10px] text-stone-400 uppercase tracking-tighter font-normal">分類標籤</label><CategoryPicker selectedCategories={newBook.category} allCategories={categories} onToggle={c => setNewBook(p => ({...p, category: p.category.includes(c) ? p.category.filter(x=>x!==c) : [...p.category, c]}))} onAddNew={c => handleUpdateCategories([...categories, c])} onDelete={c => handleUpdateCategories(categories.filter(x => x !== c))} /></div>
-                                    <div className="md:col-span-4"><label className="text-[10px] text-stone-400 uppercase tracking-tighter">字數/頁數</label><input type="number" placeholder="字數/頁數" value={newBook.wordCount} onChange={e=>setNewBook({...newBook, wordCount:e.target.value, isWordCountManual:true})} className="w-full p-2 bg-transparent border-b border-stone-200 outline-none" /></div>
-                                    <div className="md:col-span-4"><label className="text-[10px] text-stone-400 uppercase tracking-tighter font-normal">加入日期</label><input type="date" value={newBook.addDate} onChange={e=>setNewBook({...newBook, addDate:e.target.value})} className="w-full p-2 bg-transparent border-b border-stone-200 text-sub outline-none" /></div>
-                                    <div className="md:col-span-4"><label className="text-[10px] text-stone-400 uppercase tracking-tighter">推薦連結/備註</label><textarea placeholder="URL 或 文字" value={newBook.reviewUrl} onChange={e=>setNewBook({...newBook, reviewUrl:e.target.value})} className="w-full p-2 bg-transparent border-b border-stone-200 outline-none resize-none overflow-hidden min-h-[40px]" onInput={(e) => {e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px';}} /></div>
-                                    <div className="md:col-span-12"><label className="text-[10px] text-stone-400 uppercase tracking-tighter font-normal">故事大綱</label><textarea placeholder="..." value={newBook.synopsis} onChange={e=>setNewBook({...newBook, synopsis:e.target.value})} className="w-full p-3 bg-stone-50 rounded-xl h-32 outline-none resize-none font-normal" /></div>
+                            <form onSubmit={addBook} className="p-5 pt-3 space-y-2 border-t border-stone-50 animate-fade-in font-normal">
+                                <div className="grid grid-cols-1 md:grid-cols-12 gap-x-4 gap-y-2">
+                                    <div className="md:col-span-7 flex flex-col gap-0.5">
+                                        <label className="text-xs text-stone-400 uppercase tracking-tighter font-normal">書名</label>
+                                        <input value={newBook.title} onChange={e=>setNewBook({...newBook, title:e.target.value})} className="w-full p-1 bg-transparent border-b border-stone-200 outline-none focus:border-wood-300 font-title min-w-0" required />
+                                    </div>
+                                    <div className="md:col-span-5 flex flex-col gap-0.5">
+                                        <label className="text-xs text-stone-400 uppercase tracking-tighter font-normal">作者</label>
+                                        <input value={newBook.author} onChange={e=>setNewBook({...newBook, author:e.target.value})} className="w-full p-1 bg-transparent border-b border-stone-200 outline-none focus:border-wood-300 min-w-0" />
+                                    </div>
+                                    <div className="md:col-span-12 flex flex-col gap-0.5">
+                                        <label className="text-xs text-stone-400 uppercase tracking-tighter font-normal">分類</label>
+                                        <div className="w-full min-w-0">
+                                            <CategoryPicker selectedCategories={newBook.category} allCategories={categories} onToggle={c => setNewBook(p => ({...p, category: p.category.includes(c) ? p.category.filter(x=>x!==c) : [...p.category, c]}))} onAddNew={c => handleUpdateCategories([...categories, c])} onDelete={c => handleUpdateCategories(categories.filter(x => x !== c))} />
+                                        </div>
+                                    </div>
+                                    <div className="md:col-span-4 flex flex-col gap-0.5">
+                                        <label className="text-xs text-stone-400 uppercase tracking-tighter font-normal">字數/頁數</label>
+                                        <input type="number" value={newBook.wordCount} onChange={e=>setNewBook({...newBook, wordCount:e.target.value, isWordCountManual:true})} className="w-full p-1 bg-transparent border-b border-stone-200 outline-none min-w-0" />
+                                    </div>
+                                    <div className="md:col-span-4 flex flex-col gap-0.5">
+                                        <label className="text-xs text-stone-400 uppercase tracking-tighter font-normal">加入日期</label>
+                                        <input type="date" value={newBook.addDate} onChange={e=>setNewBook({...newBook, addDate:e.target.value})} className="w-full p-1 bg-transparent border-b border-stone-200 text-sub outline-none min-w-0" />
+                                    </div>
+                                    <div className="md:col-span-4 flex flex-col gap-0.5">
+                                        <label className="text-xs text-stone-400 uppercase tracking-tighter font-normal">推薦連結/備註</label>
+                                        <textarea value={newBook.reviewUrl} onChange={e=>setNewBook({...newBook, reviewUrl:e.target.value})} className="w-full py-0.5 px-1 bg-transparent border-b border-stone-200 outline-none resize-none overflow-hidden min-h-[24px] min-w-0" onInput={(e) => {e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px';}} />
+                                    </div>
+                                    <div className="md:col-span-12 flex flex-col gap-0.5">
+                                        <label className="text-xs text-stone-400 uppercase tracking-tighter font-normal">故事大綱</label>
+                                        <textarea value={newBook.synopsis} onChange={e=>setNewBook({...newBook, synopsis:e.target.value})} className="w-full p-2 bg-stone-50 rounded-xl h-32 outline-none resize-none font-normal min-w-0" />
+                                    </div>
                                 </div>
                                 <div className="flex justify-end gap-3 pt-2 font-normal"><button type="submit" className="bg-wood-500 text-white px-8 py-2 rounded-xl shadow-lg hover:bg-wood-600 font-title transition-all">存入書櫃</button></div>
                             </form>
                         )}
                     </section>
 
-                    <div className="space-y-2.5 font-normal px-1 md:px-0">
-                        <div className="flex flex-wrap items-center justify-between gap-3 font-normal">
-                            <div className="flex gap-1 bg-white p-1 rounded-xl shadow-inner border border-stone-200">
-                                {['all', 'reading', 'finished', 'dropped'].map(f => (
-                                    <button key={f} onClick={() => setStatusFilter(f)} className={`px-4 py-1 rounded-lg text-xs transition-all ${statusFilter===f ? 'bg-wood-400 text-white shadow-sm font-normal' : 'text-stone-400 font-normal'}`}>
-                                        {f==='all'?'全部':f==='reading'?'未讀':f==='finished'?'已完食':'棄書'}
-                                    </button>
-                                ))}
+                    <div className="space-y-2.5 font-normal px-0">
+                        {/* 狀態篩選：全寬平分比例 */}
+                        <div className="w-full bg-white p-1 rounded-xl shadow-inner border border-stone-200 flex">
+                            {['all', 'reading', 'finished', 'dropped'].map(f => (
+                                <button key={f} onClick={() => setStatusFilter(f)} className={`flex-1 py-1.5 rounded-lg text-xs transition-all ${statusFilter===f ? 'bg-wood-400 text-white shadow-sm font-normal' : 'text-stone-400 font-normal'}`}>
+                                    {f==='all'?'全部':f==='reading'?'未讀':f==='finished'?'已完食':'棄書'}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* 條件篩選：1:1 等寬對稱並排 */}
+                        <div className="grid grid-cols-2 gap-2 w-full">
+                            <div className="relative">
+                                <button onClick={() => setIsRatingMenuOpen(!isRatingMenuOpen)} className={`w-full flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-xs transition-all border font-normal ${ratingFilter > 0 ? 'bg-gold-400 text-white border-gold-400' : 'bg-white text-stone-500 border-stone-200'}`}>
+                                    <Star size={14} className={ratingFilter > 0 ? 'fill-white text-white' : ''} /> {ratingFilter === 0 ? '評分' : `${ratingFilter} 星+`}
+                                </button>
+                                {isRatingMenuOpen && (
+                                    <div className="absolute left-0 top-full mt-2 w-full bg-white rounded-xl shadow-xl border border-stone-100 z-40 overflow-hidden animate-fade-in">
+                                        {[0, 4.5, 4, 3].map(val => (
+                                            <button key={val} onClick={() => { setRatingFilter(val); setIsRatingMenuOpen(false); }} className="w-full text-center px-4 py-2.5 text-xs hover:bg-stone-50 text-sub font-normal border-b border-stone-50 last:border-none">{val === 0 ? '全部評分' : `${val} 星+`}</button>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
-                            <div className="flex gap-2">
-                                <div className="relative">
-                                    <button onClick={() => setIsRatingMenuOpen(!isRatingMenuOpen)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs transition-all border font-normal ${ratingFilter > 0 ? 'bg-gold-400 text-white border-gold-400' : 'bg-white text-stone-500 border-stone-200'}`}>
-                                        <Star size={14} className={ratingFilter > 0 ? 'fill-white text-white' : ''} /> {ratingFilter === 0 ? '評分' : `${ratingFilter} 星+`}
-                                    </button>
-                                    {isRatingMenuOpen && (
-                                        <div className="absolute left-0 top-full mt-2 w-32 bg-white rounded-xl shadow-xl border border-stone-100 z-40 overflow-hidden animate-fade-in">
-                                            {[0, 4.5, 4, 3].map(val => (
-                                                <button key={val} onClick={() => { setRatingFilter(val); setIsRatingMenuOpen(false); }} className="w-full text-left px-4 py-2 text-xs hover:bg-stone-50 text-sub font-normal">{val === 0 ? '全部評分' : `${val} 星+`}</button>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="relative">
-                                    <button onClick={() => setIsWordCountMenuOpen(!isWordCountMenuOpen)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs transition-all border font-normal ${wordCountFilter !== 'all' ? 'bg-wood-400 text-white border-wood-400' : 'bg-white text-stone-500 border-stone-200'}`}>
-                                        <TrendingUp size={14} className={wordCountFilter !== 'all' ? 'text-white' : ''} /> 
-                                        {wordCountFilter === 'all' ? '字數' : wordCountFilter === 'under30' ? '30萬內' : wordCountFilter === '30to50' ? '30-50萬' : wordCountFilter === '50to100' ? '50-100萬' : '100萬+'}
-                                    </button>
-                                    {isWordCountMenuOpen && (
-                                        <div className="absolute right-0 md:left-0 md:right-auto top-full mt-2 w-32 bg-white rounded-xl shadow-xl border border-stone-100 z-40 overflow-hidden animate-fade-in">
-                                            {[
-                                                { val: 'all', label: '全部字數' },
-                                                { val: 'under30', label: '30萬字內' },
-                                                { val: '30to50', label: '30-50萬字' },
-                                                { val: '50to100', label: '50-100萬字' },
-                                                { val: 'over100', label: '100萬字以上' }
-                                            ].map(opt => (
-                                                <button key={opt.val} onClick={() => { setWordCountFilter(opt.val); setIsWordCountMenuOpen(false); }} className="w-full text-left px-4 py-2 text-xs hover:bg-stone-50 text-sub font-normal">{opt.label}</button>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
+                            <div className="relative">
+                                <button onClick={() => setIsWordCountMenuOpen(!isWordCountMenuOpen)} className={`w-full flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-xs transition-all border font-normal ${wordCountFilter !== 'all' ? 'bg-wood-400 text-white border-wood-400' : 'bg-white text-stone-500 border-stone-200'}`}>
+                                    <TrendingUp size={14} className={wordCountFilter !== 'all' ? 'text-white' : ''} /> 
+                                    {wordCountFilter === 'all' ? '字數' : wordCountFilter === 'under30' ? '30萬內' : wordCountFilter === '30to50' ? '30-50萬' : wordCountFilter === '50to100' ? '50-100萬' : '100萬+'}
+                                </button>
+                                {isWordCountMenuOpen && (
+                                    <div className="absolute right-0 top-full mt-2 w-full bg-white rounded-xl shadow-xl border border-stone-100 z-40 overflow-hidden animate-fade-in">
+                                        {[
+                                            { val: 'all', label: '全部字數' },
+                                            { val: 'under30', label: '30萬字內' },
+                                            { val: '30to50', label: '30-50萬字' },
+                                            { val: '50to100', label: '50-100萬字' },
+                                            { val: 'over100', label: '100萬字以上' }
+                                        ].map(opt => (
+                                            <button key={opt.val} onClick={() => { setWordCountFilter(opt.val); setIsWordCountMenuOpen(false); }} className="w-full text-center px-4 py-2.5 text-xs hover:bg-stone-50 text-sub font-normal border-b border-stone-50 last:border-none">{opt.label}</button>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         </div>
 
-                        {/* 搜尋列與圖示化複製按鈕 */}
-                        <div className="flex items-center gap-2">
-                            <div className="relative group flex-1">
+                        {/* 搜尋列與複製按鈕 */}
+                        <div className="flex items-center gap-2 w-full">
+                            <div className="relative group flex-1 min-w-0">
                                 <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-300"/>
                                 <input 
                                     ref={searchInputRef}
                                     placeholder="關鍵字(多標籤請用空格隔開)..." 
                                     value={searchTerm} 
                                     onChange={e=>setSearchTerm(e.target.value)} 
-                                    className="w-full pl-10 pr-10 py-2.5 rounded-2xl bg-white border border-stone-200 outline-none text-sm soft-shadow focus:border-wood-300 transition-all font-normal" 
+                                    className="w-full pl-10 pr-10 py-2 rounded-2xl bg-white border border-stone-200 outline-none text-sm placeholder:text-[11px] soft-shadow focus:border-wood-300 transition-all font-normal min-w-0" 
                                 />
                                 {searchTerm && (
-                                    <button 
-                                        onClick={clearSearch}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-300 hover:text-stone-500 transition-colors"
-                                    >
+                                    <button onClick={clearSearch} className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-300 hover:text-stone-500 transition-colors">
                                         <X size={16} />
                                     </button>
                                 )}
@@ -647,7 +667,7 @@
                             <button 
                                 onClick={handleCopyFilteredList}
                                 title="複製清單文字"
-                                className="shrink-0 bg-wood-500 text-white w-[46px] h-[46px] flex items-center justify-center rounded-2xl shadow-sm active:opacity-80 transition-opacity"
+                                className="shrink-0 bg-wood-500 text-white w-[40px] h-[40px] flex items-center justify-center rounded-2xl shadow-sm active:opacity-80 transition-opacity"
                             >
                                 <Copy size={18} />
                             </button>
@@ -657,22 +677,34 @@
                     <div className="grid gap-2 md:gap-3">
                         {books.length === 0 && !loading && <div className="text-center py-20 text-stone-300 text-sm tracking-widest font-normal">書櫃空空的，開始記錄第一本書吧</div>}
                         {filteredBooks.map(book => (
-                            <div key={book.id} className="bg-white p-3.5 md:p-5 rounded-[1.5rem] md:rounded-[2rem] border border-stone-200 shadow-sm flex flex-col md:flex-row gap-3 md:gap-5 relative overflow-hidden group/card font-normal mx-0.5 md:mx-0">
+                            <div key={book.id} className="bg-white p-3.5 md:p-5 rounded-[1.5rem] md:rounded-[2rem] border border-stone-200 shadow-sm flex flex-col md:flex-row gap-3 md:gap-5 relative overflow-hidden group/card font-normal mx-0">
                                 <div className={`absolute left-0 top-0 bottom-0 w-1 ${book.status==='finished'?'bg-sage-500':book.status==='dropped'?'bg-dried-500':'bg-stone-200'}`}></div>
-                                <div className="flex-1 space-y-1.5">
+                                <div className="flex-1 space-y-1.5 min-w-0">
                                     {editingId === book.id ? (
                                         <div className="space-y-3 p-0.5 animate-fade-in font-normal">
                                             <div className="grid grid-cols-2 gap-3">
-                                                <div className="space-y-0.5"><label className="text-[10px] text-stone-400 uppercase tracking-tighter font-normal">書名</label><input value={editForm.title} onChange={e=>setEditForm({...editForm, title:e.target.value})} className="w-full p-1.5 border-b outline-none focus:border-wood-400 bg-transparent font-title" /></div>
-                                                <div className="space-y-0.5"><label className="text-[10px] text-stone-400 uppercase tracking-tighter font-normal">作者</label><input value={editForm.author} onChange={e=>setEditForm({...editForm, author:e.target.value})} className="w-full p-1.5 border-b outline-none focus:border-wood-400 bg-transparent" /></div>
+                                                <div className="flex flex-col gap-0.5">
+                                                    <label className="text-xs text-stone-400 uppercase tracking-tighter font-normal">書名</label>
+                                                    <input value={editForm.title} onChange={e=>setEditForm({...editForm, title:e.target.value})} className="w-full p-1 border-b outline-none focus:border-wood-400 bg-transparent font-title min-w-0" />
+                                                </div>
+                                                <div className="flex flex-col gap-0.5">
+                                                    <label className="text-xs text-stone-400 uppercase tracking-tighter font-normal">作者</label>
+                                                    <input value={editForm.author} onChange={e=>setEditForm({...editForm, author:e.target.value})} className="w-full p-1 border-b outline-none focus:border-wood-400 bg-transparent min-w-0" />
+                                                </div>
                                             </div>
-                                            <CategoryPicker selectedCategories={editForm.category || []} allCategories={categories} onToggle={c => setEditForm(p => ({...p, category: p.category.includes(c) ? p.category.filter(x=>x!==c) : [...p.category, c]}))} onAddNew={c => handleUpdateCategories([...categories, c])} onDelete={c => handleUpdateCategories(categories.filter(x => x !== c))} />
+                                            <div className="flex flex-col gap-0.5">
+                                                <label className="text-xs text-stone-400 uppercase tracking-tighter font-normal">分類</label>
+                                                <div className="w-full min-w-0">
+                                                    <CategoryPicker selectedCategories={editForm.category || []} allCategories={categories} onToggle={c => setEditForm(p => ({...p, category: p.category.includes(c) ? p.category.filter(x=>x!==c) : [...p.category, c]}))} onAddNew={c => handleUpdateCategories([...categories, c])} onDelete={c => handleUpdateCategories(categories.filter(x => x !== c))} />
+                                                </div>
+                                            </div>
                                             <div className="grid grid-cols-2 gap-3">
-                                                <div className="space-y-0.5"><label className="text-[10px] text-stone-400 uppercase tracking-tighter font-normal">字數</label><input value={editForm.wordCount} onChange={e=>setEditForm({...editForm, wordCount:e.target.value})} className="w-full p-1.5 border-b outline-none bg-transparent" /></div>
-                                                <div className="space-y-0.5">
-                                                    <label className="text-[10px] text-stone-400 uppercase tracking-tighter font-normal">
-                                                        {book.status === 'finished' ? '完食日期' : book.status === 'dropped' ? '棄書日期' : '加入日期'}
-                                                    </label>
+                                                <div className="flex flex-col gap-0.5">
+                                                    <label className="text-xs text-stone-400 uppercase tracking-tighter font-normal">字數</label>
+                                                    <input value={editForm.wordCount} onChange={e=>setEditForm({...editForm, wordCount:e.target.value})} className="w-full p-1 border-b outline-none bg-transparent min-w-0" />
+                                                </div>
+                                                <div className="flex flex-col gap-0.5">
+                                                    <label className="text-xs text-stone-400 uppercase tracking-tighter font-normal">日期</label>
                                                     <input 
                                                         type="date" 
                                                         value={book.status === 'finished' ? (editForm.finishDate || editForm.addDate) : book.status === 'dropped' ? (editForm.dropDate || editForm.addDate) : editForm.addDate} 
@@ -681,15 +713,24 @@
                                                             else if (book.status === 'dropped') setEditForm({...editForm, dropDate: e.target.value});
                                                             else setEditForm({...editForm, addDate: e.target.value});
                                                         }} 
-                                                        className="w-full p-1.5 border-b outline-none bg-transparent" 
+                                                        className="w-full p-1 border-b outline-none bg-transparent min-w-0" 
                                                     />
                                                 </div>
                                             </div>
-                                            <div className="space-y-0.5"><label className="text-[10px] text-stone-400 uppercase tracking-tighter font-normal">推薦連結/備註</label><textarea value={editForm.reviewUrl || ''} onChange={e=>setEditForm({...editForm, reviewUrl:e.target.value})} className="w-full p-1.5 border-b outline-none bg-transparent resize-none min-h-[40px]" onInput={(e) => {e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px';}} /></div>
+                                            <div className="flex flex-col gap-0.5">
+                                                <label className="text-xs text-stone-400 uppercase tracking-tighter font-normal">連結/備註</label>
+                                                <textarea value={editForm.reviewUrl || ''} onChange={e=>setEditForm({...editForm, reviewUrl:e.target.value})} className="w-full py-0.5 px-1 border-b outline-none bg-transparent resize-none min-h-[24px] min-w-0" onInput={(e) => {e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px';}} />
+                                            </div>
                                             {book.status === 'dropped' && (
-                                                <div className="space-y-0.5"><label className="text-[10px] text-stone-400 uppercase tracking-tighter font-normal">棄書理由</label><input value={editForm.dropReason || ''} onChange={e=>setEditForm({...editForm, dropReason:e.target.value})} className="w-full p-1.5 border-b outline-none bg-transparent" /></div>
+                                                <div className="flex flex-col gap-0.5">
+                                                    <label className="text-xs text-stone-400 uppercase tracking-tighter font-normal">棄書理由</label>
+                                                    <input value={editForm.dropReason || ''} onChange={e=>setEditForm({...editForm, dropReason:e.target.value})} className="w-full p-1 border-b outline-none bg-transparent min-w-0" />
+                                                </div>
                                             )}
-                                            <div className="space-y-0.5 font-normal"><label className="text-[10px] text-stone-400 uppercase tracking-tighter font-normal">故事大綱</label><textarea value={editForm.synopsis} onChange={e=>setEditForm({...editForm, synopsis:e.target.value})} className="w-full p-2 border rounded-lg h-40 text-xs bg-stone-50 outline-none resize-none font-normal" /></div>
+                                            <div className="flex flex-col gap-0.5">
+                                                <label className="text-xs text-stone-400 uppercase tracking-tighter font-normal">故事大綱</label>
+                                                <textarea value={editForm.synopsis} onChange={e=>setEditForm({...editForm, synopsis:e.target.value})} className="w-full p-2 border rounded-lg h-40 text-xs bg-stone-50 outline-none resize-none font-normal min-w-0" />
+                                            </div>
                                             <div className="flex justify-end gap-2 font-normal"><button onClick={()=>setEditingId(null)} className="px-3 py-1 text-xs text-sub font-normal">取消</button><button onClick={()=>updateBook(book.id, editForm)} className="bg-wood-500 text-white px-5 py-1.5 rounded-lg text-xs font-title">儲存</button></div>
                                         </div>
                                     ) : (
@@ -742,18 +783,30 @@
                                                     {modalType === 'finish' ? (
                                                         <div className="space-y-3">
                                                             <div className="grid grid-cols-2 gap-2">
-                                                                <div className="space-y-1"><label className="text-[10px] text-sub">日期</label><input type="date" value={inlineData.date} onChange={e=>setInlineData({...inlineData, date:e.target.value})} className="w-full pl-1.5 pr-0 py-1 text-[10px] tracking-tighter border rounded-lg h-8" /></div>
+                                                                <div className="flex flex-col gap-0.5">
+                                                                    <label className="text-xs text-sub font-normal">日期</label>
+                                                                    <input type="date" value={inlineData.date} onChange={e=>setInlineData({...inlineData, date:e.target.value})} className="w-full px-1.5 py-1 text-[10px] tracking-tighter border rounded-lg h-8 min-w-0" />
+                                                                </div>
                                                                 <div className="flex flex-col items-center justify-end pb-1"><StarRating rating={inlineData.rating || 0} setRating={r => setInlineData({...inlineData, rating: r})} interactive={true} size={14} /></div>
                                                             </div>
-                                                            <textarea placeholder="寫下你的心得...(支援換行)" value={inlineData.review} onChange={e=>setInlineData({...inlineData, review:e.target.value})} className="w-full p-2 text-xs border rounded-lg h-24 resize-none" />
+                                                            <textarea value={inlineData.review} onChange={e=>setInlineData({...inlineData, review:e.target.value})} className="w-full p-2 text-xs border rounded-lg h-24 resize-none min-w-0" />
                                                         </div>
                                                     ) : (
                                                         <div className="space-y-3">
                                                             <div className="grid grid-cols-2 gap-2">
-                                                                <div className="space-y-1"><label className="text-[10px] text-sub">日期</label><input type="date" value={inlineData.date} onChange={e=>setInlineData({...inlineData, date:e.target.value})} className="w-full pl-1.5 pr-0 py-1 text-[10px] tracking-tighter border rounded-lg h-8" /></div>
-                                                                <div className="space-y-1"><label className="text-[10px] text-sub">進度(章節)</label><input placeholder="例：45" value={inlineData.chapter} onChange={e=>setInlineData({...inlineData, chapter:e.target.value})} className="w-full p-1.5 text-xs border rounded-lg h-8" /></div>
+                                                                <div className="flex flex-col gap-0.5">
+                                                                    <label className="text-xs text-sub font-normal">日期</label>
+                                                                    <input type="date" value={inlineData.date} onChange={e=>setInlineData({...inlineData, date:e.target.value})} className="w-full px-1.5 py-1 text-[10px] tracking-tighter border rounded-lg h-8 min-w-0" />
+                                                                </div>
+                                                                <div className="flex flex-col gap-0.5">
+                                                                    <label className="text-xs text-sub font-normal">章節</label>
+                                                                    <input value={inlineData.chapter} onChange={e=>setInlineData({...inlineData, chapter:e.target.value})} className="w-full p-1.5 text-xs border rounded-lg h-8 min-w-0" />
+                                                                </div>
                                                             </div>
-                                                            <div className="space-y-1"><label className="text-[10px] text-sub">為什麼不想看了？</label><textarea placeholder="選填：棄書原因" value={inlineData.dropReason} onChange={e=>setInlineData({...inlineData, dropReason:e.target.value})} className="w-full p-2 text-xs border rounded-lg h-16 resize-none" /></div>
+                                                            <div className="flex flex-col gap-0.5">
+                                                                <label className="text-xs text-sub font-normal">棄書理由</label>
+                                                                <textarea value={inlineData.dropReason} onChange={e=>setInlineData({...inlineData, dropReason:e.target.value})} className="w-full p-2 text-xs border rounded-lg h-16 resize-none min-w-0" />
+                                                            </div>
                                                         </div>
                                                     )}
                                                     <div className="flex justify-end">
@@ -763,7 +816,7 @@
                                             )}
 
                                             {book.synopsis && <button onClick={()=>setExpandedBooks(p=>({...p,[book.id]:!p[book.id]}))} className="text-xs text-stone-400 flex items-center gap-1 font-normal mt-1"><FileText size={12}/> 大綱</button>}
-                                            {expandedBooks[book.id] && <p className="text-xs text-sub bg-stone-50 p-2 rounded-lg mt-1 whitespace-pre-wrap font-normal">{linkifyText(book.synopsis)}</p>}
+                                            {expandedBooks[book.id] && <div className="text-xs text-sub bg-stone-50 p-2 rounded-lg mt-1 whitespace-pre-wrap font-normal max-h-40 overflow-y-auto">{linkifyText(book.synopsis)}</div>}
                                         </>
                                     )}
                                 </div>
