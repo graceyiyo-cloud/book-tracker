@@ -699,7 +699,7 @@
                                                 {book.category?.map(c => <span key={c} onClick={() => setSearchTerm(c)} className="text-[10px] bg-stone-100 px-2 py-0.5 rounded-full text-stone-400 cursor-pointer hover:bg-wood-100 transition-colors font-normal">{c}</span>)}
                                                 {book.isPinned && <span className="bg-wood-50 p-1 rounded-md border border-wood-100 font-normal"><Pin size={10} className="text-wood-500 fill-wood-500"/></span>}
                                             </div>
-                                            <h3 className="text-xl font-title text-ink leading-tight cursor-pointer hover:text-wood-400 transition-colors flex items-center gap-2" onClick={() => openExternalSearch(book.title, book.author)}>
+                                            <h3 className="text-lg font-title text-ink leading-tight cursor-pointer hover:text-wood-400 transition-colors flex items-center gap-2" onClick={() => openExternalSearch(book.title, book.author)}>
                                                 {book.title} <ExternalLink size={14} className="opacity-30"/>
                                             </h3>
                                             <div className="flex flex-wrap gap-x-3 md:gap-x-4 gap-y-1 text-xs text-sub opacity-70 font-normal">
@@ -762,7 +762,7 @@
                                                 </div>
                                             )}
 
-                                            {book.synopsis && <button onClick={()=>setExpandedBooks(p=>({...p,[book.id]:!p[book.id]}))} className="text-[10px] text-stone-400 flex items-center gap-1 font-normal mt-1"><FileText size={12}/> 大綱</button>}
+                                            {book.synopsis && <button onClick={()=>setExpandedBooks(p=>({...p,[book.id]:!p[book.id]}))} className="text-xs text-stone-400 flex items-center gap-1 font-normal mt-1"><FileText size={12}/> 大綱</button>}
                                             {expandedBooks[book.id] && <p className="text-xs text-sub bg-stone-50 p-2 rounded-lg mt-1 whitespace-pre-wrap font-normal">{linkifyText(book.synopsis)}</p>}
                                         </>
                                     )}
