@@ -520,7 +520,7 @@
             }
 
             return (
-                <div className="min-h-screen max-w-full mx-auto px-2 py-1 md:px-2 md:py-2 space-y-4 pb-20 bg-paper animate-fade-in">
+                <div className="min-h-screen max-w-full lg:max-w-[1440px] mx-auto px-2 py-1 md:px-2 md:py-2 space-y-4 pb-20 bg-paper animate-fade-in">
                     {toast && <div className={`fixed top-8 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-full shadow-2xl animate-fade-in text-white flex items-center gap-2 ${toast.type === 'error' ? 'bg-dried-500' : 'bg-wood-500'}`}>{toast.message}</div>}
                     
                     <header className="flex justify-between items-center pt-1 pb-1 border-b border-stone-200 px-1">
@@ -603,52 +603,84 @@
                     </section>
 
                     <div className="space-y-2.5 font-normal px-0">
-                        {/* 狀態篩選：全寬平分比例 */}
-                        <div className="w-full bg-white p-1 rounded-xl shadow-inner border border-stone-200 flex">
-                            {['all', 'reading', 'finished', 'dropped'].map(f => (
-                                <button key={f} onClick={() => setStatusFilter(f)} className={`flex-1 py-1.5 rounded-lg text-xs transition-all ${statusFilter===f ? 'bg-wood-400 text-white shadow-sm font-normal' : 'text-stone-400 font-normal'}`}>
-                                    {f==='all'?'全部':f==='reading'?'未讀':f==='finished'?'已完食':'棄書'}
-                                </button>
-                            ))}
+                        {/* 控制面板：電腦版將兩列合併為一行，手機版維持原本樣式 */}
+                        <div className="w-full flex flex-col lg:flex-row gap-2.5">
+                            {/* 左側：狀態篩選 */}
+                            <div className="flex-1 bg-white p-1 rounded-xl shadow-inner border border-stone-200 flex">
+                                {['all', 'reading', 'finished', 'dropped'].map(f => (
+                                    <button key={f} onClick={() => setStatusFilter(f)} className={`flex-1 py-1.5 rounded-lg text-xs transition-all ${statusFilter===f ? 'bg-wood-400 text-white shadow-sm font-normal' : 'text-stone-400 font-normal'}`}>
+                                        {f==='all'?'全部':f==='reading'?'未讀':f==='finished'?'已完食':'棄書'}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* 右側：評分與字數篩選按鈕、搜尋欄、複製按鈕 */}
+                            <div className="flex-[1.5] flex items-center gap-2.5">
+                                {/* 評分與字數容器 */}
+                                <div className="grid grid-cols-2 gap-2 flex-1 lg:flex-[1.5]">
+                                    <div className="relative">
+                                        <button onClick={() => setIsRatingMenuOpen(!isRatingMenuOpen)} className={`w-full flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-xs transition-all border font-normal ${ratingFilter > 0 ? 'bg-gold-400 text-white border-gold-400' : 'bg-white text-stone-500 border-stone-200'}`}>
+                                            <Star size={14} className={ratingFilter > 0 ? 'fill-white text-white' : ''} /> {ratingFilter === 0 ? '評分' : `${ratingFilter} 星+`}
+                                        </button>
+                                        {isRatingMenuOpen && (
+                                            <div className="absolute left-0 top-full mt-2 w-full bg-white rounded-xl shadow-xl border border-stone-100 z-40 overflow-hidden animate-fade-in">
+                                                {[0, 4.5, 4, 3].map(val => (
+                                                    <button key={val} onClick={() => { setRatingFilter(val); setIsRatingMenuOpen(false); }} className="w-full text-center px-4 py-2.5 text-xs hover:bg-stone-50 text-sub font-normal border-b border-stone-50 last:border-none">{val === 0 ? '全部評分' : `${val} 星+`}</button>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="relative">
+                                        <button onClick={() => setIsWordCountMenuOpen(!isWordCountMenuOpen)} className={`w-full flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-xs transition-all border font-normal ${wordCountFilter !== 'all' ? 'bg-wood-400 text-white border-wood-400' : 'bg-white text-stone-500 border-stone-200'}`}>
+                                            <TrendingUp size={14} className={wordCountFilter !== 'all' ? 'text-white' : ''} /> 
+                                            {wordCountFilter === 'all' ? '字數' : wordCountFilter === 'under30' ? '30萬內' : wordCountFilter === '30to50' ? '30-50萬' : wordCountFilter === '50to100' ? '50-100萬' : '100萬+'}
+                                        </button>
+                                        {isWordCountMenuOpen && (
+                                            <div className="absolute right-0 top-full mt-2 w-full bg-white rounded-xl shadow-xl border border-stone-100 z-40 overflow-hidden animate-fade-in">
+                                                {[
+                                                    { val: 'all', label: '全部字數' },
+                                                    { val: 'under30', label: '30萬字內' },
+                                                    { val: '30to50', label: '30-50萬字' },
+                                                    { val: '50to100', label: '50-100萬字' },
+                                                    { val: 'over100', label: '100萬字以上' }
+                                                ].map(opt => (
+                                                    <button key={opt.val} onClick={() => { setWordCountFilter(opt.val); setIsWordCountMenuOpen(false); }} className="w-full text-center px-4 py-2.5 text-xs hover:bg-stone-50 text-sub font-normal border-b border-stone-50 last:border-none">{opt.label}</button>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* 搜尋與複製容器 (僅在電腦版會跟篩選併排) */}
+                                <div className="hidden lg:flex items-center gap-2 flex-[2] min-w-0">
+                                    <div className="relative group flex-1 min-w-0">
+                                        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-300"/>
+                                        <input 
+                                            ref={searchInputRef}
+                                            placeholder="關鍵字(多標籤請用空格隔開)..." 
+                                            value={searchTerm} 
+                                            onChange={e=>setSearchTerm(e.target.value)} 
+                                            className="w-full pl-10 pr-10 py-2 rounded-2xl bg-white border border-stone-200 outline-none text-sm placeholder:text-[11px] soft-shadow focus:border-wood-300 transition-all font-normal min-w-0" 
+                                        />
+                                        {searchTerm && (
+                                            <button onClick={clearSearch} className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-300 hover:text-stone-500 transition-colors">
+                                                <X size={16} />
+                                            </button>
+                                        )}
+                                    </div>
+                                    <button 
+                                        onClick={handleCopyFilteredList}
+                                        title="複製清單文字"
+                                        className="shrink-0 bg-wood-500 text-white w-[40px] h-[40px] flex items-center justify-center rounded-2xl shadow-sm active:opacity-80 transition-opacity"
+                                    >
+                                        <Copy size={18} />
+                                    </button>
+                                </div>
+                            </div>
                         </div>
 
-                        {/* 條件篩選：1:1 等寬對稱並排 */}
-                        <div className="grid grid-cols-2 gap-2 w-full">
-                            <div className="relative">
-                                <button onClick={() => setIsRatingMenuOpen(!isRatingMenuOpen)} className={`w-full flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-xs transition-all border font-normal ${ratingFilter > 0 ? 'bg-gold-400 text-white border-gold-400' : 'bg-white text-stone-500 border-stone-200'}`}>
-                                    <Star size={14} className={ratingFilter > 0 ? 'fill-white text-white' : ''} /> {ratingFilter === 0 ? '評分' : `${ratingFilter} 星+`}
-                                </button>
-                                {isRatingMenuOpen && (
-                                    <div className="absolute left-0 top-full mt-2 w-full bg-white rounded-xl shadow-xl border border-stone-100 z-40 overflow-hidden animate-fade-in">
-                                        {[0, 4.5, 4, 3].map(val => (
-                                            <button key={val} onClick={() => { setRatingFilter(val); setIsRatingMenuOpen(false); }} className="w-full text-center px-4 py-2.5 text-xs hover:bg-stone-50 text-sub font-normal border-b border-stone-50 last:border-none">{val === 0 ? '全部評分' : `${val} 星+`}</button>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                            <div className="relative">
-                                <button onClick={() => setIsWordCountMenuOpen(!isWordCountMenuOpen)} className={`w-full flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-xs transition-all border font-normal ${wordCountFilter !== 'all' ? 'bg-wood-400 text-white border-wood-400' : 'bg-white text-stone-500 border-stone-200'}`}>
-                                    <TrendingUp size={14} className={wordCountFilter !== 'all' ? 'text-white' : ''} /> 
-                                    {wordCountFilter === 'all' ? '字數' : wordCountFilter === 'under30' ? '30萬內' : wordCountFilter === '30to50' ? '30-50萬' : wordCountFilter === '50to100' ? '50-100萬' : '100萬+'}
-                                </button>
-                                {isWordCountMenuOpen && (
-                                    <div className="absolute right-0 top-full mt-2 w-full bg-white rounded-xl shadow-xl border border-stone-100 z-40 overflow-hidden animate-fade-in">
-                                        {[
-                                            { val: 'all', label: '全部字數' },
-                                            { val: 'under30', label: '30萬字內' },
-                                            { val: '30to50', label: '30-50萬字' },
-                                            { val: '50to100', label: '50-100萬字' },
-                                            { val: 'over100', label: '100萬字以上' }
-                                        ].map(opt => (
-                                            <button key={opt.val} onClick={() => { setWordCountFilter(opt.val); setIsWordCountMenuOpen(false); }} className="w-full text-center px-4 py-2.5 text-xs hover:bg-stone-50 text-sub font-normal border-b border-stone-50 last:border-none">{opt.label}</button>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* 搜尋列與複製按鈕 */}
-                        <div className="flex items-center gap-2 w-full">
+                        {/* 手機版搜尋列：當 lg 以上時隱藏 (因為已併入上方) */}
+                        <div className="flex lg:hidden items-center gap-2 w-full">
                             <div className="relative group flex-1 min-w-0">
                                 <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-300"/>
                                 <input 
@@ -674,10 +706,10 @@
                         </div>
                     </div>
 
-                    <div className="grid gap-2 md:gap-3">
-                        {books.length === 0 && !loading && <div className="text-center py-20 text-stone-300 text-sm tracking-widest font-normal">書櫃空空的，開始記錄第一本書吧</div>}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3 md:gap-4">
+                        {books.length === 0 && !loading && <div className="text-center py-20 text-stone-300 text-sm tracking-widest font-normal col-span-full">書櫃空空的，開始記錄第一本書吧</div>}
                         {filteredBooks.map(book => (
-                            <div key={book.id} className="bg-white p-3.5 md:p-5 rounded-[1.5rem] md:rounded-[2rem] border border-stone-200 shadow-sm flex flex-col md:flex-row gap-3 md:gap-5 relative overflow-hidden group/card font-normal mx-0">
+                            <div key={book.id} className="bg-white p-3.5 md:p-5 rounded-[1.5rem] md:rounded-[2rem] border border-stone-200 shadow-sm flex flex-col md:flex-row gap-3 md:gap-5 relative overflow-hidden group/card font-normal mx-0 h-full">
                                 <div className={`absolute left-0 top-0 bottom-0 w-1 ${book.status==='finished'?'bg-sage-500':book.status==='dropped'?'bg-dried-500':'bg-stone-200'}`}></div>
                                 <div className="flex-1 space-y-1.5 min-w-0">
                                     {editingId === book.id ? (
@@ -820,13 +852,13 @@
                                         </>
                                     )}
                                 </div>
-                                <div className="flex flex-row md:flex-col gap-2 justify-end shrink-0 md:w-10 font-normal">
+                                <div className="flex row md:flex-col gap-2 justify-end shrink-0 md:w-10 font-normal">
                                     <button onClick={() => { setEditingId(book.id); setEditForm({...book}); }} className="h-9 w-9 md:h-10 md:w-10 flex items-center justify-center text-stone-300 hover:text-wood-500 bg-stone-50 rounded-xl" title="編輯基本資料"><Edit3 size={18}/></button>
                                     {book.status === 'reading' ? (
                                         <>
                                             <button onClick={(e) => { e.stopPropagation(); updateBook(book.id, { isReadingNow: !book.isReadingNow }); }} className={`h-9 w-9 md:h-10 md:w-10 flex items-center justify-center rounded-xl border ${book.isReadingNow ? 'bg-sage-500 text-white border-sage-600' : 'bg-white text-stone-300 border-stone-100'} font-normal`} title="標記正在閱讀"><BookOpen size={16}/></button>
-                                            <button onClick={() => { setInlineActionId(book.id); setModalType('finish'); setInlineData({ date: new Date().toISOString().split('T')[0], rating: 0, review: '' }); }} className="h-9 w-9 md:h-10 md:w-10 flex items-center justify-center text-sage-600 bg-sage-50 rounded-xl border border-sage-100" title="完食"><BookCheck size={18}/></button>
-                                            <button onClick={() => { setInlineActionId(book.id); setModalType('drop'); setInlineData({ date: new Date().toISOString().split('T')[0], chapter: '', dropReason: '' }); }} className="h-9 w-9 md:h-10 md:w-10 flex items-center justify-center text-dried-500 bg-dried-50 rounded-xl border border-dried-100" title="棄書"><BookX size={18}/></button>
+                                            <button onClick={() => { setInlineActionId(book.id); setModalType('finish'); setInlineData({ date: book.finishDate, rating: book.rating || 0, review: book.review || '' }); }} className="h-9 w-9 md:h-10 md:w-10 flex items-center justify-center text-sage-600 bg-sage-50 rounded-xl border border-sage-100" title="完食"><BookCheck size={18}/></button>
+                                            <button onClick={() => { setInlineActionId(book.id); setModalType('drop'); setInlineData({ date: book.dropDate, chapter: book.dropChapter || '', dropReason: book.dropReason || '' }); }} className="h-9 w-9 md:h-10 md:w-10 flex items-center justify-center text-dried-500 bg-dried-50 rounded-xl border border-dried-100" title="棄書"><BookX size={18}/></button>
                                         </>
                                     ) : <button onClick={() => updateBook(book.id, { status:'reading', finishDate:null, dropChapter:null, dropDate:null, rating:null, review:null, dropReason:null, isReadingNow: false })} className="h-9 w-9 md:h-10 md:w-10 flex items-center justify-center text-stone-400 bg-stone-50 rounded-xl font-normal" title="恢復閱讀狀態/重讀"><RotateCcw size={18}/></button>}
                                     <button onClick={(e) => { e.stopPropagation(); updateBook(book.id, { isPinned: !book.isPinned }); }} className={`h-9 w-9 md:h-10 md:w-10 flex items-center justify-center rounded-xl border ${book.isPinned ? 'bg-wood-500 text-white border-wood-600' : 'bg-white text-stone-300 border-stone-100'} font-normal`} title="置頂">{book.isPinned ? <PinOff size={16}/> : <Pin size={16}/>}</button>
