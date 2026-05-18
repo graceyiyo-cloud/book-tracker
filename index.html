@@ -56,6 +56,40 @@
         .font-title { font-weight: 700; }
         /* 強制移除斜體 */
         em, i, .italic { font-style: normal !important; }
+
+        /* 手機版：大綱欄位固定高度並可上下滑動，方便修改長文字 */
+        @media (max-width: 768px) {
+            .synopsis-textarea {
+                height: 11rem !important;
+                max-height: 11rem !important;
+                overflow-y: auto !important;
+                resize: vertical !important;
+                -webkit-overflow-scrolling: touch;
+            }
+            .synopsis-textarea::-webkit-scrollbar { width: 8px; }
+            .synopsis-textarea::-webkit-scrollbar-thumb {
+                background: #c5d5c5;
+                border-radius: 999px;
+            }
+            .synopsis-textarea::-webkit-scrollbar-track {
+                background: #f5f5f4;
+                border-radius: 999px;
+            }
+            .synopsis-display-scroll {
+                max-height: 11rem !important;
+                overflow-y: auto !important;
+                -webkit-overflow-scrolling: touch;
+            }
+            .synopsis-display-scroll::-webkit-scrollbar { width: 8px; }
+            .synopsis-display-scroll::-webkit-scrollbar-thumb {
+                background: #c5d5c5;
+                border-radius: 999px;
+            }
+            .synopsis-display-scroll::-webkit-scrollbar-track {
+                background: #f5f5f4;
+                border-radius: 999px;
+            }
+        }
     </style>
 </head>
 <body class="bg-paper text-ink selection:bg-wood-200 selection:text-ink">
@@ -537,22 +571,23 @@
                         </div>
                     </header>
 
-                    <section className="space-y-2.5 px-0">
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="bg-white p-4 rounded-2xl border border-stone-100 flex justify-between items-center overflow-hidden soft-shadow">
+                    <div className="lg:bg-white lg:border lg:border-stone-200 lg:rounded-3xl lg:p-3 lg:soft-shadow lg:space-y-3">
+                    <section className="space-y-2.5 px-0 lg:flex lg:items-center lg:gap-3 lg:space-y-0">
+                        <div className="grid grid-cols-2 gap-3 lg:flex lg:gap-2 lg:w-[300px] lg:shrink-0">
+                            <div className="bg-white p-4 lg:p-2.5 rounded-2xl border border-stone-100 flex justify-between items-center overflow-hidden soft-shadow lg:flex-1 lg:min-h-[70px]">
                                 <div><p className="text-xs text-sub mb-1">未讀</p><p className="text-2xl text-ink font-normal">{stats.reading}</p></div>
                                 <Hourglass className="text-wood-100 -mr-4" size={48} />
                             </div>
-                            <div className="bg-sage-50 p-4 rounded-2xl border border-sage-100 flex justify-between items-center overflow-hidden soft-shadow">
+                            <div className="bg-sage-50 p-4 lg:p-2.5 rounded-2xl border border-sage-100 flex justify-between items-center overflow-hidden soft-shadow lg:flex-1 lg:min-h-[70px]">
                                 <div><p className="text-xs text-wood-500 mb-1">累計完食</p><p className="text-2xl text-ink font-normal">{stats.finished}</p></div>
                                 <Trophy className="text-wood-200 -mr-4" size={48} />
                             </div>
                         </div>
-                        <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1 px-0 flex-nowrap">
+                        <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1 px-0 flex-nowrap lg:flex-1 lg:gap-2 lg:pb-0">
                             {stats.sortedYears.map(y => (
                                 <div key={y} 
                                      onClick={() => setYearFilter(yearFilter === y ? null : y)}
-                                     className={`p-3 rounded-xl border flex flex-col items-center min-w-[120px] shrink-0 soft-shadow transition-all cursor-pointer ${yearFilter === y ? 'bg-wood-500 border-wood-600' : 'bg-white/60 border-stone-100'}`}>
+                                     className={`p-3 lg:px-3 lg:py-2 rounded-xl border flex flex-col items-center min-w-[120px] lg:min-w-[112px] shrink-0 soft-shadow transition-all cursor-pointer ${yearFilter === y ? 'bg-wood-500 border-wood-600' : 'bg-white/60 border-stone-100'}`}>
                                     <span className={`text-xs mb-2 font-title ${yearFilter === y ? 'text-white' : 'text-wood-400'}`}>{y} 年度</span>
                                     <div className="flex gap-4 w-full justify-center items-center text-center font-normal">
                                         <div><div className={`text-lg ${yearFilter === y ? 'text-white' : 'text-sage-500'}`}>{stats.years[y].f}</div><div className={`text-[9px] ${yearFilter === y ? 'text-wood-100' : 'text-sub'}`}>完食</div></div>
@@ -564,13 +599,14 @@
                         </div>
                     </section>
 
-                    <section className="bg-white rounded-3xl border border-stone-200 overflow-hidden soft-shadow transition-all mx-0">
-                        <div onClick={() => setIsAddFormOpen(!isAddFormOpen)} className="py-2.5 px-4 flex justify-between cursor-pointer hover:bg-stone-50 transition-colors font-normal">
-                            <div className="flex items-center gap-2 text-ink font-title"><PenTool className="text-wood-400" size={18} /> 紀錄新書</div>
+                    <div className="mt-2 lg:mt-0 lg:grid lg:grid-cols-[150px_1fr] lg:gap-2.5 lg:items-start">
+                    <section className="bg-white rounded-3xl border border-stone-200 overflow-hidden soft-shadow transition-all mx-0 lg:contents">
+                        <div onClick={() => setIsAddFormOpen(!isAddFormOpen)} className="py-2.5 px-4 flex justify-between cursor-pointer hover:bg-stone-50 transition-colors font-normal lg:order-1 lg:h-[40px] lg:py-0 lg:px-3 lg:items-center lg:rounded-2xl lg:border lg:border-stone-200 lg:bg-white lg:shadow-sm lg:soft-shadow">
+                            <div className="flex items-center gap-2 text-ink font-title lg:text-sm lg:whitespace-nowrap"><PenTool className="text-wood-400" size={18} /> 紀錄新書</div>
                             {isAddFormOpen ? <ChevronUp className="text-stone-400"/> : <Plus className="text-wood-400"/>}
                         </div>
                         {isAddFormOpen && (
-                            <form onSubmit={addBook} className="p-5 pt-3 space-y-2 border-t border-stone-50 animate-fade-in font-normal">
+                            <form onSubmit={addBook} className="p-5 pt-3 space-y-2 border-t border-stone-50 animate-fade-in font-normal lg:order-3 lg:col-span-2 lg:mt-2 lg:bg-white lg:border lg:border-stone-200 lg:rounded-2xl lg:p-4">
                                 <div className="grid grid-cols-1 md:grid-cols-12 gap-x-4 gap-y-2">
                                     <div className="md:col-span-7 flex flex-col gap-0.5">
                                         <label className="text-xs text-stone-400 uppercase tracking-tighter font-normal">書名</label>
@@ -600,7 +636,7 @@
                                     </div>
                                     <div className="md:col-span-12 flex flex-col gap-0.5">
                                         <label className="text-xs text-stone-400 uppercase tracking-tighter font-normal">故事大綱</label>
-                                        <textarea value={newBook.synopsis} onChange={e=>setNewBook({...newBook, synopsis:e.target.value})} className="w-full p-2 bg-stone-50 rounded-xl h-32 outline-none resize-none font-normal min-w-0" />
+                                        <textarea value={newBook.synopsis} onChange={e=>setNewBook({...newBook, synopsis:e.target.value})} className="synopsis-textarea w-full p-2 bg-stone-50 rounded-xl h-32 outline-none resize-none font-normal min-w-0" />
                                     </div>
                                 </div>
                                 <div className="flex justify-end gap-3 pt-2 font-normal"><button type="submit" className="bg-wood-500 text-white px-8 py-2 rounded-xl shadow-lg hover:bg-wood-600 font-title transition-all">存入書櫃</button></div>
@@ -608,9 +644,9 @@
                         )}
                     </section>
 
-                    <div className="space-y-2.5 font-normal px-0">
-                        {/* 控制面板：電腦版將兩列合併為一行，手機版維持原本樣式 */}
-                        <div className="w-full flex flex-col lg:flex-row gap-2.5">
+                    <div className="space-y-2.5 font-normal px-0 mt-2 lg:mt-0 lg:order-2 lg:space-y-0">
+                        {/* 控制面板：手機版維持原本樣式；電腦版重新分成狀態、條件、搜尋三區 */}
+                        <div className="w-full flex flex-col lg:grid lg:grid-cols-[280px_260px_1fr] gap-2.5 lg:items-center">
                             {/* 左側：狀態篩選 */}
                             <div className="flex-1 bg-white p-1 rounded-xl shadow-inner border border-stone-200 flex">
                                 {['all', 'reading', 'finished', 'dropped'].map(f => (
@@ -621,9 +657,9 @@
                             </div>
 
                             {/* 右側：評分與字數篩選按鈕、搜尋欄、複製按鈕 */}
-                            <div className="flex-[1.5] flex items-center gap-2.5">
+                            <div className="flex-[1.5] flex items-center gap-2.5 lg:contents">
                                 {/* 評分與字數容器 */}
-                                <div className="grid grid-cols-2 gap-2 flex-1 lg:flex-[1.5]">
+                                <div className="grid grid-cols-2 gap-2 flex-1 lg:flex-none lg:w-full">
                                     <div className="relative">
                                         <button onClick={() => setIsRatingMenuOpen(!isRatingMenuOpen)} className={`w-full flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-xs transition-all border font-normal ${ratingFilter > 0 ? 'bg-gold-400 text-white border-gold-400' : 'bg-white text-stone-500 border-stone-200'}`}>
                                             <Star size={14} className={ratingFilter > 0 ? 'fill-white text-white' : ''} /> {ratingFilter === 0 ? '評分' : `${ratingFilter} 星+`}
@@ -658,7 +694,7 @@
                                 </div>
 
                                 {/* 搜尋與複製容器 (僅在電腦版會跟篩選併排) */}
-                                <div className="hidden lg:flex items-center gap-2 flex-[2] min-w-0">
+                                <div className="hidden lg:flex items-center gap-2 min-w-0">
                                     <div className="relative group flex-1 min-w-0">
                                         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-300"/>
                                         <input 
@@ -710,6 +746,8 @@
                                 <Copy size={18} />
                             </button>
                         </div>
+                    </div>
+                    </div>
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3 md:gap-4">
@@ -767,7 +805,7 @@
                                             )}
                                             <div className="flex flex-col gap-0.5">
                                                 <label className="text-xs text-stone-400 uppercase tracking-tighter font-normal">故事大綱</label>
-                                                <textarea value={editForm.synopsis} onChange={e=>setEditForm({...editForm, synopsis:e.target.value})} className="w-full p-2 border rounded-lg h-40 text-xs bg-stone-50 outline-none resize-none font-normal min-w-0" />
+                                                <textarea value={editForm.synopsis} onChange={e=>setEditForm({...editForm, synopsis:e.target.value})} className="synopsis-textarea w-full p-2 border rounded-lg h-40 text-xs bg-stone-50 outline-none resize-none font-normal min-w-0" />
                                             </div>
                                             <div className="flex justify-end gap-2 font-normal"><button onClick={()=>setEditingId(null)} className="px-3 py-1 text-xs text-sub font-normal">取消</button><button onClick={()=>updateBook(book.id, editForm)} className="bg-wood-500 text-white px-5 py-1.5 rounded-lg text-xs font-title">儲存</button></div>
                                         </div>
@@ -854,7 +892,7 @@
                                             )}
 
                                             {book.synopsis && <button onClick={()=>setExpandedBooks(p=>({...p,[book.id]:!p[book.id]}))} className="text-xs text-stone-400 flex items-center gap-1 font-normal mt-1"><FileText size={12}/> 大綱</button>}
-                                            {expandedBooks[book.id] && <div className="text-xs text-sub bg-stone-50 p-2 rounded-lg mt-1 whitespace-pre-wrap font-normal max-h-40 overflow-y-auto">{linkifyText(book.synopsis)}</div>}
+                                            {expandedBooks[book.id] && <div className="synopsis-display-scroll text-xs text-sub bg-stone-50 p-2 rounded-lg mt-1 whitespace-pre-wrap font-normal max-h-40 overflow-y-auto">{linkifyText(book.synopsis)}</div>}
                                         </>
                                     )}
                                 </div>
