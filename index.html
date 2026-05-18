@@ -121,7 +121,13 @@
         const CategoryPicker = ({ selectedCategories, onToggle, allCategories, onAddNew, onDelete }) => {
             const [isOpen, setIsOpen] = useState(false);
             const [filterText, setFilterText] = useState('');
+            const categorySearchInputRef = useRef(null);
             const filtered = useMemo(() => allCategories.filter(c => c.toLowerCase().includes(filterText.toLowerCase())), [allCategories, filterText]);
+            const handleCategorySelect = (cat) => {
+                onToggle(cat);
+                setFilterText('');
+                requestAnimationFrame(() => categorySearchInputRef.current?.focus());
+            };
             const handleKeyDown = async (e) => {
                 if (e.key === 'Enter') {
                     e.preventDefault();
@@ -153,11 +159,11 @@
                     </div>
                     {isOpen && (
                         <div className="mt-2 p-3 bg-white rounded-xl border border-stone-200 animate-fade-in relative z-10">
-                            <input placeholder="搜尋或新增..." value={filterText} onChange={e => setFilterText(e.target.value)} onKeyDown={handleKeyDown} className="w-full mb-2 p-1.5 border rounded-lg text-xs outline-none" />
+                            <input ref={categorySearchInputRef} placeholder="搜尋或新增..." value={filterText} onChange={e => setFilterText(e.target.value)} onKeyDown={handleKeyDown} className="w-full mb-2 p-1.5 border rounded-lg text-xs outline-none" />
                             <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto no-scrollbar">
                                 {filtered.map(cat => (
                                     <div key={cat} className="group relative">
-                                        <button type="button" onClick={() => onToggle(cat)} className={`text-[10px] px-2 py-1 rounded-full border transition ${selectedCategories.includes(cat) ? 'bg-wood-500 text-white' : 'bg-white text-stone-600 border-stone-200'}`}>{cat}</button>
+                                        <button type="button" onClick={() => handleCategorySelect(cat)} className={`text-[10px] px-2 py-1 rounded-full border transition ${selectedCategories.includes(cat) ? 'bg-wood-500 text-white' : 'bg-white text-stone-600 border-stone-200'}`}>{cat}</button>
                                         <button type="button" onClick={(e) => { e.stopPropagation(); if(confirm(`刪除「${cat}」？`)) onDelete(cat, e); }} className="absolute -top-1 -right-1 bg-white text-stone-300 rounded-full p-0.5 border border-stone-100 opacity-0 group-hover:opacity-100"><X size={8}/></button>
                                     </div>
                                 ))}
