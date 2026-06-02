@@ -57,6 +57,12 @@
         /* 強制移除斜體 */
         em, i, .italic { font-style: normal !important; }
 
+        /* 針對完食/棄書小視窗的日期欄位，強制縮小文字與內距避免超出框線 */
+        .date-input-sm {
+            font-size: 0.75rem !important;
+            padding: 0.1rem 0.2rem !important;
+        }
+
         /* 手機版：大綱欄位固定高度並可上下滑動，方便修改長文字 */
         @media (max-width: 768px) {
             .synopsis-textarea {
@@ -105,7 +111,7 @@
             ChevronDown, ExternalLink, Pin, PinOff, ChevronUp, Lock, Copy
         } from 'https://esm.sh/lucide-react@0.344.0';
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
         import { getFirestore, collection, addDoc, onSnapshot, doc, getDoc, updateDoc, deleteDoc, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 
         let firebaseConfig;
@@ -226,6 +232,9 @@
 
         function App() {
             const [user, setUser] = useState(null);
+            const [googleUser, setGoogleUser] = useState(null);
+            const [authStep, setAuthStep] = useState('login'); // login, checking, link_or_new, linking
+            
             const [books, setBooks] = useState([]);
             const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
             const [loading, setLoading] = useState(true);
@@ -271,11 +280,6 @@
                                 setCustomId(sid);
                                 setLoginPassword(spw);
                                 setIsLoggedIn(true);
-                            } else {
-                                localStorage.removeItem('reading_tracker_id');
-                                localStorage.removeItem('reading_tracker_pw');
-                                setCustomId('');
-                                setLoginPassword('');
                             }
                         } catch (e) {
                             console.error("Session verification failed", e);
@@ -285,8 +289,27 @@
                 };
 
                 initApp();
-                const unsubscribe = onAuthStateChanged(auth, (curr) => {
+                const unsubscribe = onAuthStateChanged(auth, async (curr) => {
                     setUser(curr);
+                    // Google 登入後檢查綁定狀態
+                    if (curr && !curr.isAnonymous) {
+                        setGoogleUser(curr);
+                        setAuthStep('checking');
+                        try {
+                            const mappingRef = doc(db, 'artifacts', appId, 'public', 'data', 'google_users', curr.uid);
+                            const mappingSnap = await getDoc(mappingRef);
+                            if (mappingSnap.exists() && mappingSnap.data().mappedId) {
+                                setCustomId(mappingSnap.data().mappedId);
+                                setIsLoggedIn(true);
+                            } else {
+                                setAuthStep('link_or_new');
+                            }
+                        } catch (e) {
+                            console.error("Mapping fetch error", e);
+                            setAuthStep('login');
+                            setIsSearching(false);
+                        }
+                    }
                 });
                 return () => unsubscribe();
             }, []);
@@ -344,6 +367,36 @@
 
             const showToast = (message, type = 'info') => { setToast({ message, type }); setTimeout(() => setToast(null), 3000); };
             
+            const handleGoogleLogin = async () => {
+                setIsSearching(true);
+                const provider = new GoogleAuthProvider();
+                try {
+                    await signInWithPopup(auth, provider);
+                    setIsSearching(false);
+                } catch (err) {
+                    console.error("Google Auth Error:", err);
+                    showToast("登入取消或失敗", "error");
+                    setIsSearching(false);
+                }
+            };
+
+            const handleStartFresh = async () => {
+                setIsSearching(true);
+                try {
+                    const newId = googleUser.uid;
+                    const mappingRef = doc(db, 'artifacts', appId, 'public', 'data', 'google_users', googleUser.uid);
+                    await setDoc(mappingRef, { mappedId: newId });
+                    setCustomId(newId);
+                    setIsLoggedIn(true);
+                    showToast("已為您建立全新書櫃！");
+                } catch (err) {
+                    console.error(err);
+                    showToast("建立失敗", "error");
+                } finally {
+                    setIsSearching(false);
+                }
+            };
+
             const handleLogin = async (e) => {
                 e.preventDefault();
                 const id = customId.trim();
@@ -364,8 +417,17 @@
                             return;
                         }
                     } else {
+                        // 如果原本沒密碼，幫忙設定
                         await setDoc(settingsRef, { password: pw }, { merge: true });
-                        showToast("已為此 ID 設定新密碼");
+                    }
+
+                    // 如果是處於綁定狀態 (有 GoogleUser)
+                    if (googleUser) {
+                        const mappingRef = doc(db, 'artifacts', appId, 'public', 'data', 'google_users', googleUser.uid);
+                        await setDoc(mappingRef, { mappedId: id });
+                        showToast("舊資料綁定成功！");
+                    } else {
+                        showToast("登入成功！");
                     }
 
                     localStorage.setItem('reading_tracker_id', id);
@@ -419,13 +481,10 @@
             }, [books]);
 
             const filteredBooks = useMemo(() => {
-                // 將關鍵字以空格切分並過濾空值
                 const terms = searchTerm.toLowerCase().split(/\s+/).filter(t => t !== '');
                 return books.filter(b => {
                     const matchStatus = statusFilter === 'all' || b.status === statusFilter;
                     const matchRating = ratingFilter === 0 || (b.rating || 0) >= ratingFilter;
-                    
-                    // 必須符合所有切分出來的關鍵字
                     const matchTerms = terms.length === 0 || terms.every(term => 
                         b.title.toLowerCase().includes(term) || 
                         b.author?.toLowerCase().includes(term) || 
@@ -539,21 +598,58 @@
 
             if (!isLoggedIn) {
                 return (
-                    <div className="min-h-screen flex items-center justify-center p-6 bg-paper animate-fade-in">
-                        <div className="bg-white p-10 rounded-[2.5rem] shadow-xl w-full max-md text-center border border-stone-200">
-                            <BookOpen size={64} className="mx-auto text-wood-300 mb-6" />
-                            <h1 className="text-4xl font-title mb-2 tracking-widest text-ink">雲端書櫃</h1>
-                            <p className="text-sub mb-8 text-sm">輸入 ID 與密碼開啟閱讀空間</p>
-                            <form onSubmit={handleLogin} className="space-y-4">
-                                <div className="space-y-2">
-                                    <input value={customId} onChange={e => setCustomId(e.target.value)} placeholder="你的專屬 ID" className="w-full p-4 rounded-2xl border text-center text-lg outline-none focus:ring-2 focus:ring-wood-200 transition-all" />
-                                    <input type="password" value={loginPassword} onChange={e => setLoginPassword(e.target.value)} placeholder="登入密碼" className="w-full p-4 rounded-2xl border text-center text-lg outline-none focus:ring-2 focus:ring-wood-200 transition-all" />
+                    <div className="min-h-screen flex items-center justify-center p-4 bg-paper animate-fade-in">
+                        <div className="bg-white p-6 md:p-8 rounded-3xl shadow-xl w-full max-w-[340px] text-center border border-stone-200">
+                            <BookOpen size={42} className="mx-auto text-wood-300 mb-4" />
+                            <h1 className="text-2xl font-title mb-1 tracking-widest text-ink">雲端書櫃</h1>
+                            
+                            {authStep === 'login' && (
+                                <div className="mt-6">
+                                    <p className="text-sub mb-4 text-xs">使用 Google 帳號一鍵登入</p>
+                                    <button onClick={handleGoogleLogin} disabled={isSearching} className="w-full bg-wood-500 text-white py-2.5 rounded-xl font-title shadow-md hover:bg-wood-600 transition-all flex items-center justify-center gap-2 text-sm">
+                                        {isSearching ? <RefreshCw className="animate-spin" size={16} /> : 'Google 登入'}
+                                    </button>
                                 </div>
-                                <button type="submit" disabled={isSearching} className="w-full bg-wood-500 text-white py-4 rounded-2xl font-title shadow-lg hover:bg-wood-600 transition-all flex items-center justify-center gap-2">
-                                    {isSearching ? <RefreshCw className="animate-spin" /> : '進入書房'}
-                                </button>
-                                <p className="text-[10px] text-stone-400 mt-4 leading-relaxed">首次登入新 ID 時，輸入的密碼將設為專屬密碼。<br/>其他瀏覽器必須輸入正確密碼才能存取。</p>
-                            </form>
+                            )}
+
+                            {authStep === 'checking' && (
+                                <div className="py-8 space-y-3">
+                                    <RefreshCw className="animate-spin mx-auto text-wood-300" size={24} />
+                                    <p className="text-xs text-sub">正在確認帳號資料...</p>
+                                </div>
+                            )}
+
+                            {authStep === 'link_or_new' && (
+                                <div className="animate-fade-in mt-6">
+                                    <p className="text-sub mb-4 text-xs">初次登入，請選擇：</p>
+                                    <div className="space-y-2.5">
+                                        <button onClick={() => setAuthStep('linking')} className="w-full bg-stone-50 text-stone-600 border border-stone-200 py-2.5 rounded-xl font-title hover:bg-stone-100 transition-all text-sm">
+                                            綁定現有的書櫃 ID
+                                        </button>
+                                        <button onClick={handleStartFresh} disabled={isSearching} className="w-full bg-wood-500 text-white py-2.5 rounded-xl font-title shadow-md hover:bg-wood-600 transition-all flex items-center justify-center gap-2 text-sm">
+                                            {isSearching ? <RefreshCw className="animate-spin" size={16} /> : '建立全新書櫃'}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {authStep === 'linking' && (
+                                <form onSubmit={handleLogin} className="space-y-3 animate-fade-in mt-6">
+                                    <p className="text-sub mb-3 text-xs">請輸入原本的 ID 與密碼</p>
+                                    <div className="space-y-2">
+                                        <input value={customId} onChange={e => setCustomId(e.target.value)} placeholder="舊的書櫃 ID" className="w-full p-2.5 rounded-xl border text-center text-sm outline-none focus:ring-2 focus:ring-wood-200 transition-all" required />
+                                        <input type="password" value={loginPassword} onChange={e => setLoginPassword(e.target.value)} placeholder="登入密碼" className="w-full p-2.5 rounded-xl border text-center text-sm outline-none focus:ring-2 focus:ring-wood-200 transition-all" required />
+                                    </div>
+                                    <div className="pt-1 space-y-2">
+                                        <button type="submit" disabled={isSearching} className="w-full bg-wood-500 text-white py-2.5 rounded-xl font-title shadow-md hover:bg-wood-600 transition-all flex items-center justify-center gap-2 text-sm">
+                                            {isSearching ? <RefreshCw className="animate-spin" size={16} /> : '確認綁定'}
+                                        </button>
+                                        <button type="button" onClick={() => setAuthStep('link_or_new')} className="w-full text-xs text-stone-400 hover:text-stone-600 py-1.5">
+                                            返回上一步
+                                        </button>
+                                    </div>
+                                </form>
+                            )}
                         </div>
                     </div>
                 );
@@ -567,7 +663,7 @@
                         <div className="flex items-center gap-2 text-xl tracking-widest text-ink font-title"><BookOpen className="text-wood-400"/> 閱讀手帳</div>
                         <div className="flex items-center gap-4 text-xs text-sub">
                             <span className="flex items-center gap-1 font-medium"><User size={14}/> {customId}</span>
-                            <button onClick={() => { setIsLoggedIn(false); localStorage.removeItem('reading_tracker_id'); localStorage.removeItem('reading_tracker_pw'); setCustomId(''); setLoginPassword(''); }} className="hover:text-dried-500 transition-colors" title="登出"><LogOut size={18}/></button>
+                            <button onClick={() => { setIsLoggedIn(false); localStorage.removeItem('reading_tracker_id'); localStorage.removeItem('reading_tracker_pw'); setCustomId(''); setLoginPassword(''); setAuthStep('login'); auth.signOut(); }} className="hover:text-dried-500 transition-colors" title="登出"><LogOut size={18}/></button>
                         </div>
                     </header>
 
@@ -832,7 +928,7 @@
                                                     <div className="flex justify-between items-center mb-1 font-normal">
                                                         <span className="text-[10px] text-sage-600 flex items-center gap-1 font-normal">
                                                             <BookCheck size={12}/> 完食於 {book.finishDate ? book.finishDate.replace(/-/g, '/') : ''}
-                                                            <button onClick={() => { setInlineActionId(book.id); setModalType('finish'); setInlineData({ date: book.finishDate, rating: book.rating || 0, review: book.review || '' }); }} className="ml-1 text-sage-400 hover:text-sage-600 transition-colors"><Edit3 size={10}/></button>
+                                                            <button onClick={() => { setInlineActionId(book.id); setModalType('finish'); setInlineData({ date: book.finishDate || new Date().toISOString().split('T')[0], rating: book.rating || 0, review: book.review || '' }); }} className="ml-1 text-sage-400 hover:text-sage-600 transition-colors"><Edit3 size={10}/></button>
                                                         </span>
                                                         {book.rating > 0 && <StarRating rating={book.rating} />}
                                                     </div>
@@ -844,7 +940,7 @@
                                                 <div className="mt-2 bg-dried-50 p-3 rounded-xl border border-dried-100 text-xs text-dried-text font-normal space-y-1">
                                                     <p className="flex items-center gap-1 font-normal">
                                                         <BookX size={12}/> {book.dropDate ? book.dropDate.replace(/-/g, '/') : ''} 第 {book.dropChapter || '?'} 章棄書
-                                                        <button onClick={() => { setInlineActionId(book.id); setModalType('drop'); setInlineData({ date: book.dropDate, chapter: book.dropChapter || '', dropReason: book.dropReason || '' }); }} className="ml-1 text-dried-300 hover:text-dried-500 transition-colors"><Edit3 size={10}/></button>
+                                                        <button onClick={() => { setInlineActionId(book.id); setModalType('drop'); setInlineData({ date: book.dropDate || new Date().toISOString().split('T')[0], chapter: book.dropChapter || '', dropReason: book.dropReason || '' }); }} className="ml-1 text-dried-300 hover:text-dried-500 transition-colors"><Edit3 size={10}/></button>
                                                     </p>
                                                     {book.dropReason && <p className="text-[11px] opacity-80 pl-4 border-l border-dried-200">{book.dropReason}</p>}
                                                 </div>
@@ -861,7 +957,7 @@
                                                             <div className="grid grid-cols-2 gap-2">
                                                                 <div className="flex flex-col gap-0.5">
                                                                     <label className="text-xs text-sub font-normal">日期</label>
-                                                                    <input type="date" value={inlineData.date} onChange={e=>setInlineData({...inlineData, date:e.target.value})} className="w-full px-1.5 py-1 text-[10px] tracking-tighter border rounded-lg h-8 min-w-0" />
+                                                                    <input type="date" value={inlineData.date} onChange={e=>setInlineData({...inlineData, date:e.target.value})} className="w-full text-xs tracking-tighter border rounded-lg h-8 min-w-0 date-input-sm" />
                                                                 </div>
                                                                 <div className="flex flex-col items-center justify-end pb-1"><StarRating rating={inlineData.rating || 0} setRating={r => setInlineData({...inlineData, rating: r})} interactive={true} size={14} /></div>
                                                             </div>
@@ -872,7 +968,7 @@
                                                             <div className="grid grid-cols-2 gap-2">
                                                                 <div className="flex flex-col gap-0.5">
                                                                     <label className="text-xs text-sub font-normal">日期</label>
-                                                                    <input type="date" value={inlineData.date} onChange={e=>setInlineData({...inlineData, date:e.target.value})} className="w-full px-1.5 py-1 text-[10px] tracking-tighter border rounded-lg h-8 min-w-0" />
+                                                                    <input type="date" value={inlineData.date} onChange={e=>setInlineData({...inlineData, date:e.target.value})} className="w-full text-xs tracking-tighter border rounded-lg h-8 min-w-0 date-input-sm" />
                                                                 </div>
                                                                 <div className="flex flex-col gap-0.5">
                                                                     <label className="text-xs text-sub font-normal">章節</label>
@@ -901,8 +997,8 @@
                                     {book.status === 'reading' ? (
                                         <>
                                             <button onClick={(e) => { e.stopPropagation(); updateBook(book.id, { isReadingNow: !book.isReadingNow }); }} className={`h-9 w-9 md:h-10 md:w-10 flex items-center justify-center rounded-xl border ${book.isReadingNow ? 'bg-sage-500 text-white border-sage-600' : 'bg-white text-stone-300 border-stone-100'} font-normal`} title="標記正在閱讀"><BookOpen size={16}/></button>
-                                            <button onClick={() => { setInlineActionId(book.id); setModalType('finish'); setInlineData({ date: book.finishDate, rating: book.rating || 0, review: book.review || '' }); }} className="h-9 w-9 md:h-10 md:w-10 flex items-center justify-center text-sage-600 bg-sage-50 rounded-xl border border-sage-100" title="完食"><BookCheck size={18}/></button>
-                                            <button onClick={() => { setInlineActionId(book.id); setModalType('drop'); setInlineData({ date: book.dropDate, chapter: book.dropChapter || '', dropReason: book.dropReason || '' }); }} className="h-9 w-9 md:h-10 md:w-10 flex items-center justify-center text-dried-500 bg-dried-50 rounded-xl border border-dried-100" title="棄書"><BookX size={18}/></button>
+                                            <button onClick={() => { setInlineActionId(book.id); setModalType('finish'); setInlineData({ date: book.finishDate || new Date().toISOString().split('T')[0], rating: book.rating || 0, review: book.review || '' }); }} className="h-9 w-9 md:h-10 md:w-10 flex items-center justify-center text-sage-600 bg-sage-50 rounded-xl border border-sage-100" title="完食"><BookCheck size={18}/></button>
+                                            <button onClick={() => { setInlineActionId(book.id); setModalType('drop'); setInlineData({ date: book.dropDate || new Date().toISOString().split('T')[0], chapter: book.dropChapter || '', dropReason: book.dropReason || '' }); }} className="h-9 w-9 md:h-10 md:w-10 flex items-center justify-center text-dried-500 bg-dried-50 rounded-xl border border-dried-100" title="棄書"><BookX size={18}/></button>
                                         </>
                                     ) : <button onClick={() => updateBook(book.id, { status:'reading', finishDate:null, dropChapter:null, dropDate:null, rating:null, review:null, dropReason:null, isReadingNow: false })} className="h-9 w-9 md:h-10 md:w-10 flex items-center justify-center text-stone-400 bg-stone-50 rounded-xl font-normal" title="恢復閱讀狀態/重讀"><RotateCcw size={18}/></button>}
                                     <button onClick={(e) => { e.stopPropagation(); updateBook(book.id, { isPinned: !book.isPinned }); }} className={`h-9 w-9 md:h-10 md:w-10 flex items-center justify-center rounded-xl border ${book.isPinned ? 'bg-wood-500 text-white border-wood-600' : 'bg-white text-stone-300 border-stone-100'} font-normal`} title="置頂">{book.isPinned ? <PinOff size={16}/> : <Pin size={16}/>}</button>
