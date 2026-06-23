@@ -909,7 +909,7 @@
                                         <>
                                             <div className="flex flex-wrap gap-1.5 items-center font-normal">
                                                 {book.isReadingNow && <span className="text-[10px] bg-sage-50 text-sage-600 px-2 py-0.5 rounded-full border border-sage-200 flex items-center gap-1 font-normal"><BookOpen size={10} className="fill-sage-100"/> 正在閱讀</span>}
-                                                {book.category?.map(c => <span key={c} onClick={() => setSearchTerm(c)} className="text-[10px] bg-stone-100 px-2 py-0.5 rounded-full text-stone-400 cursor-pointer hover:bg-wood-100 transition-colors font-normal">{c}</span>)}
+                                                {book.category?.map(c => <span key={c} onClick={() => setSearchTerm(c)} className="text-[10px] bg-stone-50 border border-stone-200 px-2 py-0.5 rounded-full text-stone-600 cursor-pointer hover:bg-wood-50 hover:border-wood-300 hover:text-wood-600 transition-colors font-normal">{c}</span>)}
                                                 {book.isPinned && <span className="bg-wood-50 p-1 rounded-md border border-wood-100 font-normal"><Pin size={10} className="text-wood-500 fill-wood-500"/></span>}
                                             </div>
                                             <h3 className="text-lg font-title text-ink leading-tight cursor-pointer hover:text-wood-400 transition-colors flex items-center gap-2" onClick={() => openExternalSearch(book.title, book.author)}>
