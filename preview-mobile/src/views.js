@@ -16,8 +16,30 @@ const iconButton = (act, label, icon, id = "") =>
   `<button class="icon" data-act="${act}" data-id="${esc(id)}" aria-label="${esc(label)}" title="${esc(label)}">${ico(icon)}</button>`;
 const status = (b) =>
   `<span class="status ${b.status === "dropped" ? "dropped" : ""}">${kind(b) === "reading" ? "未讀" : labels[kind(b)]}</span>`;
-const stars = (rating) =>
-  `<span class="rating" aria-label="評分 ${Number(rating) || 0} 星">${rating ? `${rating} / 5` : ""}</span>`;
+const stars = (rating) => {
+  const value = Math.max(0, Math.min(5, Number(rating) || 0));
+  if (!value) return "";
+  return (
+    '<span class="rating-display" role="img" aria-label="評分 ' +
+    value +
+    ' 星" title="' +
+    value +
+    ' 星">' +
+    [1, 2, 3, 4, 5]
+      .map(
+        (n) =>
+          '<span class="display-star">' +
+          ico("star") +
+          '<span class="display-star-fill" style="width:' +
+          Math.max(0, Math.min(1, value - n + 1)) * 100 +
+          '%">' +
+          ico("star") +
+          "</span></span>",
+      )
+      .join("") +
+    "</span>"
+  );
+};
 export function linkedText(text) {
   return String(text || "")
     .split(/(https?:\/\/[^\s]+)/g)
@@ -38,7 +60,7 @@ function tags(b) {
 }
 function bookRow(b, i, m) {
   const expanded = m.state.expanded.includes(b.id);
-  return `<article class="book" data-book="${esc(b.id)}"><span class="book-index">${String(i + 1).padStart(2, "0")}</span><div class="book-body"><a class="book-title" href="${esc(searchUrl(b.title, b.author))}" target="_blank" rel="noopener noreferrer" title="搜尋書名與作者">${esc(b.title)} ${ico("link")}</a><div class="meta"><button class="meta-link" data-act="quickSearch" data-value="${esc(b.author || "佚名")}">${esc(b.author || "佚名")}</button><span>${wordText(b)}</span><span>${esc(dateValue(b) || "")}</span>${b.isPinned ? "<span>置頂</span>" : ""}</div><div class="tags">${tags(b)}${stars(b.rating)}</div>${b.reviewUrl ? `<div class="book-links">${ico("link")}<div>${linkedText(b.reviewUrl)}</div></div>` : ""}${b.status === "finished" ? `<div class="record-summary"><span>完食於 ${esc(b.finishDate || "未填日期")}</span>${iconButton("finish", "修改完食紀錄", "edit", b.id)}${b.review ? `<p>${esc(b.review)}</p>` : ""}</div>` : b.status === "dropped" ? `<div class="record-summary dropped"><span>${esc(b.dropDate || "未填日期")} · 第 ${esc(b.dropChapter || "?")} 章棄書</span>${iconButton("drop", "修改棄書紀錄", "edit", b.id)}${b.dropReason ? `<p>${esc(b.dropReason)}</p>` : ""}</div>` : ""}${b.synopsis ? `<button class="synopsis-toggle" data-act="synopsis" data-id="${esc(b.id)}" aria-expanded="${expanded}">${ico("book")}${expanded ? "收合大綱" : "大綱"}</button>${expanded ? `<div class="synopsis-text prose">${esc(b.synopsis)}</div>` : ""}` : ""}</div><div class="book-side"><div class="book-badges">${status(b)}${iconButton("detail", `查看《${b.title}》詳情`, "book", b.id)}</div><div class="row-actions">${b.status === "reading" ? `<button class="book-action" data-act="${b.isReadingNow ? "finish" : "toggleReading"}" data-id="${esc(b.id)}">${b.isReadingNow ? "記錄完食" : "開始閱讀"}${ico("arrow")}</button>` : `<button class="book-action" data-act="${b.status === "finished" ? "finish" : "drop"}" data-id="${esc(b.id)}">編輯紀錄${ico("edit")}</button>`}${iconButton("menu", `《${b.title}》更多操作`, "more", b.id)}</div></div></article>`;
+  return `<article class="book" data-book="${esc(b.id)}"><span class="book-index">${String(i + 1).padStart(2, "0")}</span><div class="book-body"><a class="book-title" href="${esc(searchUrl(b.title, b.author))}" target="_blank" rel="noopener noreferrer" title="搜尋書名與作者">${esc(b.title)} ${ico("link")}</a><div class="meta"><button class="meta-link" data-act="quickSearch" data-value="${esc(b.author || "佚名")}">${esc(b.author || "佚名")}</button><span>${wordText(b)}</span><span>${esc(dateValue(b) || "")}</span>${b.isPinned ? "<span>置頂</span>" : ""}</div><div class="tags">${tags(b)}${stars(b.rating)}</div></div><div class="book-side"><div class="book-badges">${status(b)}${iconButton("detail", `查看《${b.title}》詳情`, "book", b.id)}</div><div class="row-actions">${b.status === "reading" ? `<button class="book-action" data-act="${b.isReadingNow ? "finish" : "toggleReading"}" data-id="${esc(b.id)}">${b.isReadingNow ? "記錄完食" : "開始閱讀"}${ico("arrow")}</button>` : `<button class="book-action" data-act="${b.status === "finished" ? "finish" : "drop"}" data-id="${esc(b.id)}">編輯紀錄${ico("edit")}</button>`}${iconButton("menu", `《${b.title}》更多操作`, "more", b.id)}</div></div><div class="book-notes">${b.reviewUrl ? `<div class="book-links">${ico("link")}<div>${linkedText(b.reviewUrl)}</div></div>` : ""}${b.status === "finished" ? `<div class="record-summary"><span>完食於 ${esc(b.finishDate || "未填日期")}</span>${iconButton("finish", "修改完食紀錄", "edit", b.id)}${b.review ? `<p>${esc(b.review)}</p>` : ""}</div>` : b.status === "dropped" ? `<div class="record-summary dropped"><span>${esc(b.dropDate || "未填日期")} · 第 ${esc(b.dropChapter || "?")} 章棄書</span>${iconButton("drop", "修改棄書紀錄", "edit", b.id)}${b.dropReason ? `<p>${esc(b.dropReason)}</p>` : ""}</div>` : ""}${b.synopsis ? `<button class="synopsis-toggle" data-act="synopsis" data-id="${esc(b.id)}" aria-expanded="${expanded}">${ico("book")}${expanded ? "收合大綱" : "大綱"}</button>${expanded ? `<div class="synopsis-text prose">${esc(b.synopsis)}</div>` : ""}` : ""}</div></article>`;
 }
 function nav(m, cls) {
   return `<nav class="${cls}" aria-label="主要導覽">${[
@@ -71,7 +93,7 @@ function shelf(m) {
         (f.sort === "title" ? "依書名排列" : "高評分優先"),
     ],
   ].filter((x) => x[1]);
-  return `<div class="intro"><div><h1>我的書櫃</h1><p>把想讀的留下，把讀過的記住。</p></div><div class="edition">${m.mode === "demo" ? "示範書單 · 自由試用" : "私人閱讀收藏"}<br>THE READING ROOM</div></div><div class="tabs" role="group" aria-label="閱讀狀態">${Object.entries(
+  return `<div class="tabs" role="group" aria-label="閱讀狀態">${Object.entries(
     labels,
   )
     .map(
@@ -103,7 +125,7 @@ function review(m) {
         date?.match(/^\d{4}[-/]\d{1,2}/)?.[0].replace("/", "-") || "未填日期";
       (groups[key] ??= []).push(b);
     });
-  return `<div class="intro"><div><h1>閱讀回顧</h1><p>故事翻到最後，還有一些值得留下。</p></div></div><div class="review-stats"><div class="stat"><span class="small-label">累計完食</span><strong>${s.finished}</strong></div><div class="stat"><span class="small-label">暫別的故事</span><strong>${s.dropped}</strong></div><div class="stat"><span class="small-label">四星以上</span><strong>${m.books.filter((b) => b.rating >= 4).length}</strong></div></div><h2 class="section-title">年度紀錄 · 點選查看書單</h2>${yearCards(s, m.state)}${
+  return `<section class="reading-summary" aria-label="閱讀統計"><div class="summary-item"><span class="summary-icon">${ico("check")}</span><span class="summary-label">累計完食</span><strong>${s.finished}<small>本</small></strong></div><div class="summary-item"><span class="summary-icon">${ico("book")}</span><span class="summary-label">暫別的故事</span><strong>${s.dropped}<small>本</small></strong></div><div class="summary-item"><span class="summary-icon">${ico("star")}</span><span class="summary-label">四星以上</span><strong>${m.books.filter((b) => b.rating >= 4).length}<small>本</small></strong></div></section><h2 class="section-title">年度紀錄 · 點選查看書單</h2>${yearCards(s, m.state)}${
     Object.keys(groups)
       .sort()
       .reverse()

@@ -346,7 +346,7 @@ svg {
 }
 .book-index {
   font:
-    italic 17px Georgia,
+    normal 17px Georgia,
     serif;
   color: #939a8e;
   padding-top: 4px;
@@ -1348,5 +1348,298 @@ select:disabled {
   }
   .preview {
     display: none;
+  }
+}
+
+/* Compact reading layout, full-width notes and star ratings. */
+*,
+*::before,
+*::after {
+  font-style: normal !important;
+}
+.topbar {
+  padding-bottom: 14px;
+}
+.tabs {
+  margin-top: 10px;
+}
+.toolbar {
+  padding: 8px 0;
+}
+.workspace {
+  gap: 20px;
+}
+.book {
+  padding: 13px 0;
+  column-gap: 12px;
+  row-gap: 4px;
+}
+.book-body {
+  grid-column: 2;
+  grid-row: 1;
+}
+.book-side {
+  grid-column: 3;
+  grid-row: 1;
+}
+.book-notes {
+  grid-column: 2/-1;
+  min-width: 0;
+}
+.book-notes:empty {
+  display: none;
+}
+.book-notes .record-summary {
+  margin-top: 2px;
+}
+.book-notes .book-links {
+  margin: 3px 0;
+}
+.book-notes .synopsis-toggle {
+  min-height: 32px;
+  padding: 0;
+}
+.book-notes .synopsis-text {
+  padding: 9px 10px;
+  width: 100%;
+}
+.record-summary {
+  padding: 3px 9px;
+}
+.record-summary p {
+  margin-bottom: 5px;
+  line-height: 1.7;
+}
+.meta {
+  margin: 1px 0 3px;
+  gap: 2px 8px;
+}
+.meta-link {
+  min-height: 28px;
+}
+.tags {
+  gap: 4px;
+}
+.tags button.tag {
+  min-height: 28px;
+}
+.field {
+  margin: 11px 0;
+}
+.field > span {
+  margin-bottom: 4px;
+}
+.form-grid {
+  gap: 8px;
+}
+.form-footer {
+  margin-top: 16px;
+  padding-top: 10px;
+}
+.detail-grid {
+  padding: 13px 0;
+  margin: 16px 0;
+  gap: 12px;
+}
+.detail-section {
+  margin: 18px 0;
+}
+.detail-actions {
+  margin: 16px 0;
+}
+.panel-head {
+  margin-bottom: 18px;
+}
+.timeline-heading {
+  margin-top: 18px;
+}
+.year-cards {
+  margin: 10px 0;
+  gap: 6px;
+}
+.rating-display {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  vertical-align: middle;
+  margin: 3px 0 3px 3px;
+  flex-shrink: 0;
+}
+.display-star {
+  position: relative;
+  display: block;
+  width: 16px;
+  height: 16px;
+  color: #b9b6a8;
+}
+.display-star > svg,
+.display-star-fill > svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+.display-star-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 16px;
+  overflow: hidden;
+  color: #ad8c4e;
+}
+.display-star-fill svg {
+  fill: #c0a269;
+  max-width: none;
+}
+.reading-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 16px 0 20px;
+  padding: 16px 0;
+  background: var(--surface);
+  border-block: 1px solid var(--line);
+}
+.summary-item {
+  display: grid;
+  grid-template-columns: 24px auto;
+  column-gap: 8px;
+  row-gap: 4px;
+  padding: 0 20px;
+  align-items: center;
+}
+.summary-item + .summary-item {
+  border-left: 1px solid var(--line);
+}
+.summary-icon {
+  grid-column: 1;
+  grid-row: 1;
+  color: var(--green);
+  display: flex;
+}
+.summary-icon svg {
+  width: 18px;
+  height: 18px;
+}
+.summary-label {
+  grid-column: 2;
+  grid-row: 1;
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.summary-item strong {
+  grid-column: 2;
+  grid-row: 2;
+  font-size: 27px;
+  font-weight: 500;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+.summary-item small {
+  font-size: 11px;
+  color: var(--muted);
+  margin-left: 6px;
+  font-weight: 400;
+}
+@media (max-width: 650px) {
+  .main {
+    padding-inline: 14px;
+  }
+  .topbar {
+    padding: 9px 0;
+  }
+  .tabs {
+    margin-top: 5px;
+  }
+  .toolbar {
+    padding: 5px 0;
+  }
+  .book {
+    padding: 10px 0;
+    grid-template-columns: 17px minmax(0, 1fr) 74px;
+    column-gap: 6px;
+    row-gap: 2px;
+  }
+  .book-index {
+    padding-top: 3px;
+  }
+  .book-title {
+    font-size: 18px;
+  }
+  .book-side {
+    gap: 0;
+  }
+  .book-notes {
+    grid-column: 2/-1;
+  }
+  .book .record-summary {
+    padding: 2px 8px;
+  }
+  .book .record-summary p {
+    font-size: 13px;
+    line-height: 1.7;
+  }
+  .book-notes .synopsis-text {
+    font-size: 14px;
+  }
+  .reading-summary {
+    margin: 12px 0 16px;
+    padding: 12px 0;
+  }
+  .summary-item {
+    grid-template-columns: 1fr;
+    gap: 3px;
+    padding: 0 10px;
+    text-align: center;
+  }
+  .summary-icon {
+    display: none;
+  }
+  .summary-label {
+    grid-column: 1;
+    grid-row: 1;
+    font-size: 11px;
+  }
+  .summary-item strong {
+    grid-column: 1;
+    grid-row: 2;
+    font-size: 25px;
+  }
+  .summary-item small {
+    font-size: 10px;
+  }
+  .panel .field {
+    margin: 10px 0;
+  }
+  .panel-head {
+    margin-bottom: 14px;
+  }
+  .panel {
+    padding-inline: 16px;
+  }
+  .detail-title {
+    margin-top: 10px;
+  }
+  .year-card {
+    padding: 7px 10px;
+  }
+  .section-title {
+    margin-bottom: 8px;
+  }
+}
+
+@media (max-width: 650px) {
+  .row-actions {
+    flex-wrap: nowrap;
+    gap: 0;
+  }
+  .row-actions .book-action {
+    gap: 0;
+  }
+  .row-actions .book-action svg {
+    display: none;
+  }
+  .book .row-actions > .icon {
+    width: 28px;
+    padding: 5px;
   }
 }
