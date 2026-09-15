@@ -1,5 +1,5 @@
 import { newId, copyText } from "./browser-utils.js";
-import { renderPage, renderLayer } from "./views.js?v=20260915-compact";
+import { renderPage, renderLayer } from "./views.js?v=20260915-synopsis";
 import { createDemoRepository, loadCloud, lookupBook } from "./repository.js";
 import {
   DEFAULT_CATEGORIES,
@@ -324,6 +324,20 @@ document.addEventListener("click", async (e) => {
         ? router.state.expanded.filter((v) => v !== id)
         : [...router.state.expanded, id],
     });
+  else if (act === "toggleAllSynopses") {
+    const synopsisIds = filterBooks(model.books, router.state)
+      .filter((book) => book.synopsis)
+      .map((book) => book.id);
+    const synopsisSet = new Set(synopsisIds);
+    const allExpanded = synopsisIds.every((bookId) =>
+      router.state.expanded.includes(bookId),
+    );
+    change({
+      expanded: allExpanded
+        ? router.state.expanded.filter((bookId) => !synopsisSet.has(bookId))
+        : [...new Set([...router.state.expanded, ...synopsisIds])],
+    });
+  }
   else if (act === "filter")
     open(
       "filter",
