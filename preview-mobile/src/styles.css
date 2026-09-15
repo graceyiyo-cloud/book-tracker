@@ -1552,6 +1552,26 @@ select:disabled {
   }
   .toolbar {
     padding: 5px 0;
+    gap: 4px;
+  }
+  .toolbar small {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    font-size: 12px;
+  }
+  .toolbar .btn {
+    flex: 0 0 auto;
+    gap: 4px;
+    padding-inline: 6px;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+  .toolbar .btn svg {
+    width: 14px;
+  }
+  .toolbar .icon {
+    width: 38px;
+    padding-inline: 8px;
   }
   .book {
     padding: 10px 0;
