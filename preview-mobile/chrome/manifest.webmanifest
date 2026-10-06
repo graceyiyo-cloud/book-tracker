@@ -7,5 +7,5 @@
   "display": "standalone",
   "background_color": "#f6f3ed",
   "theme_color": "#f6f3ed",
-  "icons": [{ "src": "../icon.png", "sizes": "512x512", "type": "image/png" }]
+  "icons": [{ "src": "/book-tracker-v2/icon.png", "sizes": "512x512", "type": "image/png" }]
 }
