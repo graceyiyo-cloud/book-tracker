@@ -1,8 +1,8 @@
 {
-  "id": "./",
+  "id": "./chrome-handbook",
   "name": "閱讀手帳 Chrome",
   "short_name": "手帳 Chrome",
-  "start_url": "./",
+  "start_url": "./?app=chrome",
   "scope": "./",
   "display": "standalone",
   "background_color": "#f6f3ed",

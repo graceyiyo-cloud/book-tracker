@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-title" content="閱讀手帳" />
     <link rel="apple-touch-icon" href="/book-tracker-v2/icon.png" />
     <link rel="icon" href="/book-tracker-v2/icon.png" />
-    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="manifest" href="./manifest.json?v=20261006" />
     <link rel="stylesheet" href="/book-tracker-v2/src/styles.css?v=20260915-recommendation" />
     <title>閱讀手帳</title>
   </head>
@@ -18,5 +18,6 @@
     <div id="toast" role="status" aria-live="polite"></div>
     <noscript>請啟用 JavaScript 以使用閱讀手帳。</noscript>
     <script type="module" src="/book-tracker-v2/src/app.js?v=20261006-browser-v8"></script>
+    <script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(() => {});</script>
   </body>
 </html>
